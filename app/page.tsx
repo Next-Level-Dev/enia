@@ -1,65 +1,30 @@
-import Image from "next/image";
+export default function Page() {
+  return ( 
+    <main className="min-h-screen w-full overflow-x-hidden">
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            IT WORKS
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            THANK GOD Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            IDK HOW TO FIX THIS IF IT EVER BREAKS
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            I WILL NEVER TOUCH THIS PROJECT SO IT CAN KEEP WORKING
-          </a>
-        </div>
-      </main>
-    </div>
+      <div className="flex flex-col gap-4 justify-center items-center mt-8 p-4">
+        <h1 className="text-5xl sm:text-7xl lg:text-9xl font-extrabold font-[Arial] bg-gradient-to-r from-[#71B280] to-[#FFE47A] bg-clip-text text-transparent text-center">Enia</h1>
+        <h2 className="text-lg sm:text-xl font-bold font-[Arial] text-[#B3B3B3] text-center">World of gods and sigils</h2>
+      </div>
+
+      <div className="flex flex-col md:flex-row flex-wrap justify-center items-center gap-4 sm:gap-8 md:gap-15 p-25 sm:p-20 md:p-25 lg:p-35">
+        <button className="bg-[#23194e] hover:bg-[#3b144d] text-gray-100 font-medium px-8 py-4 sm:px-16 sm:py-8 md:px-25 md:py-13 rounded-lg transition">
+          Read the documents
+        </button>
+
+        <button className="bg-[#23194e] hover:bg-[#3b144d] text-gray-100 font-semibold px-8 py-4 sm:px-16 sm:py-8 md:px-27 md:py-15 rounded-xl transform shadow-lg sm:scale-105 md:scale-120 transition">
+          Start with a short guide!
+        </button>
+
+        <button className="bg-[#23194e] hover:bg-[#3b144d] text-gray-100 font-medium px-8 py-4 sm:px-16 sm:py-8 md:px-25 md:py-13 rounded-lg transition">
+          Read the stories
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2 justify-center items-center mt-55 sm:mt-25 md:mt-15">
+        <h4 className="text-base sm:text-lg font-light font-[Arial] text-[#B3B3B3]">A writing project by Utku</h4>
+      </div>
+
+    </main>
   );
 }
