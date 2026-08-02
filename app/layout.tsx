@@ -1,6 +1,7 @@
 import './globals.css';
+import TopBar from '@/components/TopBar';
 
-export default function DashboardLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
@@ -8,8 +9,7 @@ export default function DashboardLayout({
   return (
     <html lang="en">
       <body>
-        {/* Layout UI */}
-        {/* Place children where you want to render a page or nested layout */}
+        <TopBar />
         <main>{children}</main>
       </body>
     </html>

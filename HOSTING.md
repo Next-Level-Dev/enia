@@ -140,8 +140,8 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 
 ---
 
-get the last 30 lines of importnat logs from the webhook systemctl and update live
-`sudo journalctl -u webhook -p err -n 30 -f`
+get the last 60 lines of logs from the webhook systemctl and update live
+`sudo journalctl -u webhook -n 60 -f`
 
 ---
 
