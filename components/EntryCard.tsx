@@ -21,6 +21,9 @@ export default function EntryCard({ section, entry }: { section: string; entry: 
             {tag}
           </span>
         ))}
+        <span className="ml-auto rounded-full border border-[#a78bfa]/40 bg-[#a78bfa]/10 px-2.5 py-0.5 text-xs font-medium text-[#c4b5fd]">
+          {entry.perspective === 'limited' ? 'Limited' : 'Omniscient'}
+        </span>
       </div>
       <h2 className="text-xl font-bold text-gray-100 group-hover:text-white transition">
         {entry.title}

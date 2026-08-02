@@ -1,4 +1,4 @@
-import type { Category } from './categories';
+import type { Category, Perspective } from './categories';
 
 export interface Entry {
   slug: string;
@@ -8,6 +8,7 @@ export interface Entry {
   lastEdited: string;
   releaseDate: string;
   category: Category;
+  perspective: Perspective;
   tags: string[];
   published: boolean;
 }

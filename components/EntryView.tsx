@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { Entry } from '@/lib/types';
 import { Markdown } from '@/lib/markdown';
+import { PERSPECTIVE_MEANINGS, TAG_MEANINGS } from '@/lib/categories';
+import Tooltip from './Tooltip';
 
 function formatDate(date: string): string {
   const [year, month, day] = date.split('-');
@@ -25,11 +27,22 @@ export default function EntryView({ section, entry }: { section: string; entry: 
                 {tag}
               </span>
             ))}
+            {entry.tags.length > 0 && (
+              <Tooltip
+                content={entry.tags
+                  .map((tag) => `• ${tag}: ${TAG_MEANINGS[tag] ?? 'No description yet.'}`)
+                  .join('\n')}
+              />
+            )}
           </div>
           <h1 className="mt-4 text-4xl font-extrabold text-gray-100">{entry.title}</h1>
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
             <span>Released {formatDate(entry.releaseDate)}</span>
             <span>Last edited {formatDate(entry.lastEdited)}</span>
+            <span className="inline-flex items-center">
+              {entry.perspective === 'limited' ? 'Limited' : 'Omniscient'} perspective
+              <Tooltip content={PERSPECTIVE_MEANINGS[entry.perspective]} />
+            </span>
           </div>
         </header>
 

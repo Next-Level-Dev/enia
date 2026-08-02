@@ -1,13 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSessionUser, SESSION_COOKIE } from '@/lib/auth';
 import { createEntry, listEntries, validateEntryInput, type ListOptions } from '@/lib/db';
-import { CATEGORY_TAGS, isCategory, type Category } from '@/lib/categories';
+import {
+  CATEGORY_TAGS,
+  isCategory,
+  isPerspective,
+  type Category,
+  type Perspective,
+} from '@/lib/categories';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
 
   const categoryParam = searchParams.get('category');
   const category = isCategory(categoryParam ?? undefined) ? (categoryParam as Category) : undefined;
+
+  const perspectiveParam = searchParams.get('perspective');
+  const perspective = isPerspective(perspectiveParam ?? undefined)
+    ? (perspectiveParam as Perspective)
+    : undefined;
 
   const tag = searchParams.get('tag') ?? undefined;
   if (category && tag && !CATEGORY_TAGS[category].includes(tag)) {
@@ -20,7 +31,7 @@ export async function GET(request: NextRequest) {
   const orderParam = searchParams.get('order');
   const order = orderParam === 'asc' ? ('asc' as const) : ('desc' as const);
 
-  const options: ListOptions = { category, tag, sort, order };
+  const options: ListOptions = { category, perspective, tag, sort, order };
   const entries = listEntries(options);
 
   return NextResponse.json({ entries });

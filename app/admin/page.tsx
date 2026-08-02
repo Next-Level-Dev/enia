@@ -1,6 +1,12 @@
 import { getCurrentAdmin } from '@/lib/session';
 import { getAllEntries } from '@/lib/db';
-import { CATEGORY_TAGS, isCategory, type Category } from '@/lib/categories';
+import {
+  CATEGORY_TAGS,
+  isCategory,
+  isPerspective,
+  type Category,
+  type Perspective,
+} from '@/lib/categories';
 import LoginForm from '@/components/admin/LoginForm';
 import AdminDashboard, { type AdminFilter } from '@/components/admin/AdminDashboard';
 
@@ -20,16 +26,24 @@ export default async function AdminPage(props: PageProps<'/admin'>) {
     ? (categoryParam as Category)
     : undefined;
 
+  const perspectiveParam = searchParams.perspective;
+  const perspective: Perspective | undefined = isPerspective(
+    typeof perspectiveParam === 'string' ? perspectiveParam : undefined
+  )
+    ? (perspectiveParam as Perspective)
+    : undefined;
+
   const tag = typeof searchParams.tag === 'string' ? searchParams.tag : undefined;
 
   const statusParam = searchParams.status;
   const status: AdminFilter['status'] =
     statusParam === 'public' ? 'public' : statusParam === 'private' ? 'private' : undefined;
 
-  const filter: AdminFilter = { sort, order, category, tag, status };
+  const filter: AdminFilter = { sort, order, category, perspective, tag, status };
 
   const entries = getAllEntries({
     category,
+    perspective,
     tag,
     sort,
     order,

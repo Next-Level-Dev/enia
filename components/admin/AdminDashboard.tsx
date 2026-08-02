@@ -6,8 +6,13 @@ import {
   CATEGORIES,
   CATEGORY_TO_SECTION,
   CATEGORY_TITLES,
+  PERSPECTIVES,
+  PERSPECTIVE_MEANINGS,
+  TAG_MEANINGS,
   type Category,
+  type Perspective,
 } from '@/lib/categories';
+import Tooltip from '../Tooltip';
 import LogoutButton from './LogoutButton';
 import DeleteButton from './DeleteButton';
 import PublishButton from './PublishButton';
@@ -21,6 +26,7 @@ export interface AdminFilter {
   sort: 'release' | 'edited' | 'created';
   order: 'asc' | 'desc';
   category?: Category;
+  perspective?: Perspective;
   tag?: string;
   status?: 'public' | 'private';
 }
@@ -31,6 +37,7 @@ function buildUrl(current: AdminFilter, patch: Partial<AdminFilter>): string {
   if (merged.sort !== 'created') params.set('sort', merged.sort);
   if (merged.order !== 'desc') params.set('order', merged.order);
   if (merged.category) params.set('category', merged.category);
+  if (merged.perspective) params.set('perspective', merged.perspective);
   if (merged.tag) params.set('tag', merged.tag);
   if (merged.status) params.set('status', merged.status);
   const qs = params.toString();
@@ -65,6 +72,7 @@ export default function AdminDashboard({
 }) {
   const hasFilter =
     filter.category !== undefined ||
+    filter.perspective !== undefined ||
     filter.tag !== undefined ||
     filter.status !== undefined ||
     filter.sort !== 'created' ||
@@ -127,7 +135,37 @@ export default function AdminDashboard({
           ))}
         </FilterGroup>
 
+        <FilterGroup label="Perspective">
+          <span className="inline-flex items-center">
+            <Tooltip
+              content={PERSPECTIVES.map((p) => `• ${PERSPECTIVE_MEANINGS[p]}`).join('\n')}
+            />
+          </span>
+          <Link
+            className={pillClass(!filter.perspective)}
+            href={buildUrl(filter, { perspective: undefined })}
+          >
+            All
+          </Link>
+          {PERSPECTIVES.map((p) => (
+            <Link
+              key={p}
+              className={pillClass(filter.perspective === p)}
+              href={buildUrl(filter, { perspective: p })}
+            >
+              {p}
+            </Link>
+          ))}
+        </FilterGroup>
+
         <FilterGroup label="Tag">
+          <span className="inline-flex items-center">
+            <Tooltip
+              content={tagOptions
+                .map((t) => `• ${t}: ${TAG_MEANINGS[t] ?? 'No description yet.'}`)
+                .join('\n')}
+            />
+          </span>
           <Link className={pillClass(!filter.tag)} href={buildUrl(filter, { tag: undefined })}>
             All
           </Link>
@@ -178,11 +216,12 @@ export default function AdminDashboard({
         </div>
       ) : (
         <div className="mt-8 overflow-x-auto rounded-xl border border-white/10">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-[#8a7f9e]">
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Perspective</th>
                 <th className="px-4 py-3 font-medium">Tags</th>
                 <th className="px-4 py-3 font-medium">Released</th>
                 <th className="px-4 py-3 font-medium">Edited</th>
@@ -206,6 +245,7 @@ export default function AdminDashboard({
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-[#B3B3B3]">{CATEGORY_TITLES[entry.category]}</td>
+                  <td className="px-4 py-3 text-[#B3B3B3]">{entry.perspective}</td>
                   <td className="px-4 py-3 text-[#B3B3B3]">
                     {entry.tags.length > 0 ? entry.tags.join(', ') : '—'}
                   </td>

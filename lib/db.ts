@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Entry } from './types';
-import { isCategory, isTagForCategory, type Category } from './categories';
+import { isCategory, isPerspective, isTagForCategory, type Category, type Perspective } from './categories';
 import { hashPassword } from './password';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -25,6 +25,7 @@ db.exec(`
     last_edited TEXT NOT NULL,
     release_date TEXT NOT NULL,
     category TEXT NOT NULL CHECK (category IN ('worldbuilding', 'story', 'guide')),
+    perspective TEXT NOT NULL DEFAULT 'omniscient' CHECK (perspective IN ('limited', 'omniscient')),
     tags TEXT NOT NULL DEFAULT '[]',
     published INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -54,6 +55,14 @@ function ensurePublishedColumn() {
 
 ensurePublishedColumn();
 
+function ensurePerspectiveColumn() {
+  const columns = db.prepare(`PRAGMA table_info(entries)`).all() as unknown as { name: string }[];
+  if (columns.some((c) => c.name === 'perspective')) return;
+  db.exec("ALTER TABLE entries ADD COLUMN perspective TEXT NOT NULL DEFAULT 'omniscient';");
+}
+
+ensurePerspectiveColumn();
+
 function ensureAdminUser() {
   const username = process.env.ADMIN_USERNAME ?? 'admin';
   const password = process.env.ADMIN_PASSWORD ?? 'admin';
@@ -82,6 +91,7 @@ interface EntryRow {
   last_edited: string;
   release_date: string;
   category: string;
+  perspective: string;
   tags: string;
   published: number;
   created_at: string;
@@ -105,6 +115,7 @@ function rowToEntry(row: EntryRow): Entry {
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
+    perspective: row.perspective as Perspective,
     tags: parseTags(row.tags),
     published: row.published === 1,
   };
@@ -116,12 +127,14 @@ export interface EntrySummary {
   lastEdited: string;
   releaseDate: string;
   category: Category;
+  perspective: Perspective;
   tags: string[];
   published: boolean;
 }
 
 export interface ListOptions {
   category?: Category;
+  perspective?: Perspective;
   tag?: string;
   sort?: 'release' | 'edited' | 'created';
   order?: 'asc' | 'desc';
@@ -142,6 +155,10 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
     conditions.push(`tags LIKE '%' || :tag || '%'`);
     params.tag = JSON.stringify(options.tag);
   }
+  if (options.perspective) {
+    conditions.push('perspective = :perspective');
+    params.perspective = options.perspective;
+  }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const column =
@@ -151,7 +168,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
 
   return db
     .prepare(
-      `SELECT slug, title, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, last_edited, release_date, category, perspective, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -163,6 +180,7 @@ function toSummary(row: EntryRow): EntrySummary {
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
+    perspective: row.perspective as Perspective,
     tags: parseTags(row.tags),
     published: row.published === 1,
   };
@@ -188,6 +206,7 @@ export interface EntryInput {
   lastEdited: string;
   releaseDate: string;
   category: Category;
+  perspective: Perspective;
   tags: string[];
   published: boolean;
 }
@@ -216,6 +235,9 @@ export function validateEntryInput(input: unknown): EntryInput {
   const category = typeof raw.category === 'string' ? raw.category : '';
   if (!isCategory(category)) throw new Error('Invalid category');
 
+  const perspective = typeof raw.perspective === 'string' ? raw.perspective : '';
+  if (!isPerspective(perspective)) throw new Error('Invalid perspective');
+
   const authorNote = typeof raw.authorNote === 'string' ? raw.authorNote : '';
   const content = typeof raw.content === 'string' ? raw.content : '';
 
@@ -236,7 +258,7 @@ export function validateEntryInput(input: unknown): EntryInput {
 
   const published = raw.published === true;
 
-  return { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
+  return { title, authorNote, content, lastEdited, releaseDate, category, perspective, tags, published };
 }
 
 function uniqueSlug(base: string): string {
@@ -251,8 +273,8 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   db.prepare(
-    `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, tags, published)
-     VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, perspective, tags, published)
+     VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :perspective, :tags, :published)`
   ).run({
     slug,
     title: input.title,
@@ -261,6 +283,7 @@ export function createEntry(input: EntryInput): Entry {
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
+    perspective: input.perspective,
     tags: tagsJson,
     published: input.published ? 1 : 0,
   });
@@ -279,7 +302,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
 
   db.prepare(
     `UPDATE entries SET slug = :slug, title = :title, author_note = :author_note, content = :content,
-     last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
+     last_edited = :last_edited, release_date = :release_date, category = :category, perspective = :perspective, tags = :tags,
      published = :published
      WHERE id = :id`
   ).run({
@@ -290,6 +313,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
+    perspective: input.perspective,
     tags: JSON.stringify(input.tags),
     published: input.published ? 1 : 0,
     id: (existing as { id: number }).id,

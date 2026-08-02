@@ -2,6 +2,8 @@
 
 ---
 
+images, videos and sound files are uploaded to cloudflare r2 connected to my 01 gmail, direct file links can then be used in markdown.
+
 connecting to the vps
 > ssh ubuntu@129.151.245.112 -i "C:\Users\utq\Desktop\enia\ssh-key-2026-07-03.key"
 

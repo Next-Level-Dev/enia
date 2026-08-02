@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { CATEGORIES, CATEGORY_TAGS, type Category } from '@/lib/categories';
+import { CATEGORIES, CATEGORY_TAGS, PERSPECTIVES, PERSPECTIVE_MEANINGS, TAG_MEANINGS, type Category, type Perspective } from '@/lib/categories';
 import { Markdown } from '@/lib/markdown';
+import Tooltip from '@/components/Tooltip';
 
 interface EntryFormProps {
   mode: 'create' | 'edit';
@@ -15,6 +16,7 @@ interface EntryFormProps {
     lastEdited: string;
     releaseDate: string;
     category: Category;
+    perspective: Perspective;
     tags: string[];
     published: boolean;
   };
@@ -44,6 +46,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const [authorNote, setAuthorNote] = useState(initial?.authorNote ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
   const [category, setCategory] = useState<Category>(initial?.category ?? 'worldbuilding');
+  const [perspective, setPerspective] = useState<Perspective>(initial?.perspective ?? 'omniscient');
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? today);
   const [lastEdited, setLastEdited] = useState(initial?.lastEdited ?? today);
@@ -67,7 +70,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     setLoading(true);
     setError('');
 
-    const payload = { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
+    const payload = { title, authorNote, content, lastEdited, releaseDate, category, perspective, tags, published };
 
     try {
       const response = await fetch(
@@ -212,7 +215,14 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
       </fieldset>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className={labelClass}>Tags</legend>
+        <legend className="flex items-center gap-1">
+          <span className={labelClass}>Tags</span>
+          <Tooltip
+            content={CATEGORY_TAGS[category]
+              .map((tag) => `• ${tag}: ${TAG_MEANINGS[tag] ?? 'No description yet.'}`)
+              .join('\n')}
+          />
+        </legend>
         <div className="flex flex-wrap gap-2">
           {CATEGORY_TAGS[category].map((tag) => {
             const selected = tags.includes(tag);
@@ -228,6 +238,32 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
                 }
               >
                 {tag}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="flex items-center gap-1">
+          <span className={labelClass}>Perspective</span>
+          <Tooltip content={PERSPECTIVES.map((p) => `• ${PERSPECTIVE_MEANINGS[p]}`).join('\n')} />
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {PERSPECTIVES.map((p) => {
+            const active = perspective === p;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPerspective(p)}
+                className={
+                  active
+                    ? 'rounded-lg border border-[#a78bfa]/60 bg-[#a78bfa]/15 px-3 py-1.5 text-sm font-medium text-[#c4b5fd] transition'
+                    : 'rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white'
+                }
+              >
+                {p}
               </button>
             );
           })}

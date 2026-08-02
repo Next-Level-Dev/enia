@@ -1,7 +1,16 @@
 import Link from 'next/link';
 import { listEntries } from '@/lib/db';
-import { CATEGORY_TAGS, CATEGORY_TITLES, type Category } from '@/lib/categories';
+import {
+  CATEGORY_TAGS,
+  CATEGORY_TITLES,
+  PERSPECTIVES,
+  PERSPECTIVE_MEANINGS,
+  TAG_MEANINGS,
+  type Category,
+  type Perspective,
+} from '@/lib/categories';
 import EntryCard from './EntryCard';
+import Tooltip from './Tooltip';
 
 interface CategoryListingProps {
   section: string;
@@ -11,10 +20,11 @@ interface CategoryListingProps {
 
 function buildUrl(
   section: string,
-  opts: { tag?: string; sort: 'release' | 'edited'; order: 'asc' | 'desc' }
+  opts: { tag?: string; perspective?: Perspective; sort: 'release' | 'edited'; order: 'asc' | 'desc' }
 ): string {
   const params = new URLSearchParams();
   if (opts.tag) params.set('tag', opts.tag);
+  if (opts.perspective) params.set('perspective', opts.perspective);
   if (opts.sort !== 'release') params.set('sort', opts.sort);
   if (opts.order !== 'desc') params.set('order', opts.order);
   const qs = params.toString();
@@ -33,11 +43,17 @@ export default async function CategoryListing({
   searchParams,
 }: CategoryListingProps) {
   const tag = typeof searchParams.tag === 'string' ? searchParams.tag : undefined;
+  const perspectiveParam = searchParams.perspective;
+  const perspective: Perspective | undefined =
+    perspectiveParam === 'limited' || perspectiveParam === 'omniscient' ? perspectiveParam : undefined;
   const sort = searchParams.sort === 'edited' ? 'edited' : 'release';
   const order = searchParams.order === 'asc' ? 'asc' : 'desc';
 
-  const entries = listEntries({ category, tag, sort, order });
+  const entries = listEntries({ category, tag, perspective, sort, order });
   const tagOptions = CATEGORY_TAGS[category];
+  const tagMeanings = tagOptions
+    .map((t) => `• ${t}: ${TAG_MEANINGS[t] ?? 'No description yet.'}`)
+    .join('\n');
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-12">
@@ -47,8 +63,11 @@ export default async function CategoryListing({
 
       <div className="mt-8 flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[#8a7f9e]">Tags:</span>
-          <Link className={pillClass(!tag)} href={`/${section}`}>
+          <span className="text-sm text-[#8a7f9e]">
+            Tags:
+            <Tooltip content={tagMeanings} />
+          </span>
+          <Link className={pillClass(!tag)} href={buildUrl(section, { tag: undefined, sort, order })}>
             All
           </Link>
           {tagOptions.map((t) => (
@@ -58,6 +77,28 @@ export default async function CategoryListing({
               href={buildUrl(section, { tag: t, sort, order })}
             >
               {t}
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-[#8a7f9e]">
+            Perspective:
+            <Tooltip content={PERSPECTIVES.map((p) => `• ${PERSPECTIVE_MEANINGS[p]}`).join('\n')} />
+          </span>
+          <Link
+            className={pillClass(!perspective)}
+            href={buildUrl(section, { tag, perspective: undefined, sort, order })}
+          >
+            All
+          </Link>
+          {PERSPECTIVES.map((p) => (
+            <Link
+              key={p}
+              className={pillClass(perspective === p)}
+              href={buildUrl(section, { tag, perspective: p, sort, order })}
+            >
+              {p}
             </Link>
           ))}
         </div>
@@ -74,7 +115,7 @@ export default async function CategoryListing({
             <Link
               key={label}
               className={pillClass(sort === s && order === o)}
-              href={buildUrl(section, { tag, sort: s, order: o })}
+              href={buildUrl(section, { tag, perspective, sort: s, order: o })}
             >
               {label}
             </Link>
