@@ -1,67 +1,49 @@
-import "server-only";
-
+import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
-import type { DatabaseSync } from 'node:sqlite';
 import type { Entry } from './types';
 import { isCategory, isTagForCategory, type Category } from './categories';
 import { hashPassword } from './password';
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH =
-  process.env.DATABASE_PATH ?? path.join(DATA_DIR, "enia.db");
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, 'enia.db');
 
-let dbInstance: DatabaseSync | null = null;
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
-function getDatabase(): DatabaseSync {
-  if (dbInstance) return dbInstance;
+export const db = new DatabaseSync(DB_PATH);
 
-  // Load only when actually running on the server
-  const { DatabaseSync } = require("node:sqlite");
+db.exec(`
+  PRAGMA journal_mode = WAL;
+  PRAGMA busy_timeout = 5000;
 
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  CREATE TABLE IF NOT EXISTS entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    author_note TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    last_edited TEXT NOT NULL,
+    release_date TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN ('worldbuilding', 'story', 'guide')),
+    tags TEXT NOT NULL DEFAULT '[]',
+    published INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 
-  const db = new DatabaseSync(DB_PATH);
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 
-  db.exec(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA busy_timeout = 5000;
-
-    CREATE TABLE IF NOT EXISTS entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slug TEXT NOT NULL UNIQUE,
-      title TEXT NOT NULL,
-      author_note TEXT NOT NULL DEFAULT '',
-      content TEXT NOT NULL DEFAULT '',
-      last_edited TEXT NOT NULL,
-      release_date TEXT NOT NULL,
-      category TEXT NOT NULL CHECK (category IN ('worldbuilding', 'story', 'guide')),
-      tags TEXT NOT NULL DEFAULT '[]',
-      published INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      is_admin INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS sessions (
-      token TEXT PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at INTEGER NOT NULL
-    );
-  `);
-
-  dbInstance = db;
-
-  return db;
-}
-
-export const db = getDatabase();
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL
+  );
+`);
 
 function ensurePublishedColumn() {
   const columns = db.prepare(`PRAGMA table_info(entries)`).all() as unknown as { name: string }[];
