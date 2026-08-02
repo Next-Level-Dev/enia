@@ -13,7 +13,7 @@ export default async function TopBar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0e031d]/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -30,7 +30,7 @@ export default async function TopBar() {
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-3 sm:gap-7">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-7">
           {LINKS.map((link) => (
             <Link
               key={link.href}

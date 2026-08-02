@@ -113,37 +113,38 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const labelClass = 'text-sm font-medium text-gray-200';
 
   return (
-    <form onSubmit={handleSubmit} className="grid items-start gap-8 lg:grid-cols-2">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="title" className={labelClass}>
-            Title
-          </label>
-          <input
-            id="title"
-            type="text"
-            className={inputClass}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      <div className="grid items-stretch gap-8 lg:grid-cols-2">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="title" className={labelClass}>
+              Title
+            </label>
+            <input
+              id="title"
+              type="text"
+              className={inputClass}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="authorNote" className={labelClass}>
-          Author note
-        </label>
-        <textarea
-          id="authorNote"
-          rows={2}
-          className={inputClass}
-          value={authorNote}
-          onChange={(e) => setAuthorNote(e.target.value)}
-        />
-        <p className="text-xs text-[#8a7f9e]">
-          Optional note shown above the content. Rendered as plain text.
-        </p>
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="authorNote" className={labelClass}>
+              Author note
+            </label>
+            <textarea
+              id="authorNote"
+              rows={2}
+              className={inputClass}
+              value={authorNote}
+              onChange={(e) => setAuthorNote(e.target.value)}
+            />
+            <p className="text-xs text-[#8a7f9e]">
+              Optional note shown above the content. Rendered as plain text.
+            </p>
+          </div>
 
       <div className="grid gap-5 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
@@ -282,22 +283,11 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="content" className={labelClass}>
-          Content (Markdown)
-        </label>
-        <textarea
-          id="content"
-          rows={18}
-          className={`${inputClass} font-mono text-sm leading-relaxed`}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
       </div>
 
       <div className="flex flex-col gap-2">
         <h4 className={labelClass}>Markdown details</h4>
-        <ul className="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-[#B3B3B3]">
+        <ul className="flex flex-1 flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-[#B3B3B3]">
           {MARKDOWN_NOTES.map((note) => (
             <li key={note.syntax} className="flex items-baseline gap-2">
               <code className="shrink-0 font-mono text-[#FFE47A]">{note.syntax}</code>
@@ -311,6 +301,33 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
             </li>
           ))}
         </ul>
+      </div>
+      </div>
+
+      <div className="grid items-stretch gap-8 lg:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="content" className={labelClass}>
+            Content (Markdown)
+          </label>
+          <textarea
+            id="content"
+            rows={18}
+            className={`${inputClass} flex-1 font-mono text-sm leading-relaxed`}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h4 className={labelClass}>Preview</h4>
+          <div className="max-h-[70vh] min-h-40 flex-1 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-6">
+            {content.trim() ? (
+              <Markdown source={content} />
+            ) : (
+              <p className="text-sm text-[#8a7f9e]">Nothing to preview yet.</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
@@ -330,18 +347,6 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
         >
           Cancel
         </button>
-      </div>
-      </div>
-
-      <div className="flex flex-col gap-2 lg:sticky lg:top-24">
-        <h4 className={labelClass}>Preview</h4>
-        <div className="max-h-[70vh] min-h-40 overflow-y-auto rounded-xl border border-white/10 bg-white/5 p-6">
-          {content.trim() ? (
-            <Markdown source={content} />
-          ) : (
-            <p className="text-sm text-[#8a7f9e]">Nothing to preview yet.</p>
-          )}
-        </div>
       </div>
     </form>
   );
