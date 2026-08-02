@@ -27,7 +27,6 @@ export default async function EditEntryPage(props: PageProps<'/admin/[slug]'>) {
             lastEdited: entry.lastEdited,
             releaseDate: entry.releaseDate,
             category: entry.category,
-            perspective: entry.perspective,
             tags: entry.tags,
             published: entry.published,
           }}

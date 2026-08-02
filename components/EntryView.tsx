@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { Entry } from '@/lib/types';
 import { Markdown } from '@/lib/markdown';
-import { PERSPECTIVE_MEANINGS, TAG_MEANINGS } from '@/lib/categories';
+import { getDict, tagLabel, type Lang } from '@/lib/i18n';
+import { tagGroupMeanings } from '@/lib/categories';
 import Tooltip from './Tooltip';
 
 function formatDate(date: string): string {
@@ -9,11 +10,22 @@ function formatDate(date: string): string {
   return `${day}.${month}.${year}`;
 }
 
-export default function EntryView({ section, entry }: { section: string; entry: Entry }) {
+export default function EntryView({
+  lang,
+  section,
+  entry,
+}: {
+  lang: Lang;
+  section: string;
+  entry: Entry;
+}) {
+  const dict = getDict(lang);
+  const sectionTitle = dict.sectionTitles[section] ?? section;
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
       <Link href={`/${section}`} className="text-sm text-[#8a7f9e] hover:text-white transition">
-        &larr; Back to {section}
+        &larr; {dict.view.backTo} {sectionTitle}
       </Link>
 
       <article className="mt-6">
@@ -24,32 +36,30 @@ export default function EntryView({ section, entry }: { section: string; entry: 
                 key={tag}
                 className="rounded-full border border-[#71B280]/40 bg-[#71B280]/10 px-2.5 py-0.5 text-xs font-medium text-[#8fd19e]"
               >
-                {tag}
+                {tagLabel(lang, tag)}
               </span>
             ))}
             {entry.tags.length > 0 && (
               <Tooltip
-                content={entry.tags
-                  .map((tag) => `• ${tag}: ${TAG_MEANINGS[tag] ?? 'No description yet.'}`)
-                  .join('\n')}
+                content={tagGroupMeanings(entry.category, entry.tags, {
+                  labelOf: (t) => tagLabel(lang, t),
+                  groupLabelOf: (name) => dict.tagGroupLabels[name] ?? '',
+                  meaningOf: (t) => dict.tagMeanings[t] ?? dict.noDescriptionYet,
+                })}
               />
             )}
           </div>
           <h1 className="mt-4 text-4xl font-extrabold text-gray-100">{entry.title}</h1>
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
-            <span>Released {formatDate(entry.releaseDate)}</span>
-            <span>Last edited {formatDate(entry.lastEdited)}</span>
-            <span className="inline-flex items-center">
-              {entry.perspective === 'limited' ? 'Limited' : 'Omniscient'} perspective
-              <Tooltip content={PERSPECTIVE_MEANINGS[entry.perspective]} />
-            </span>
+            <span>{dict.view.released} {formatDate(entry.releaseDate)}</span>
+            <span>{dict.view.lastEdited} {formatDate(entry.lastEdited)}</span>
           </div>
         </header>
 
         {entry.authorNote && (
           <aside className="mt-6 border-l-2 border-[#FFE47A]/60 pl-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-[#FFE47A]/70">
-              Author&rsquo;s note
+              {dict.view.authorsNote}
             </p>
             <p className="mt-1 text-[#FFE47A]">{entry.authorNote}</p>
           </aside>

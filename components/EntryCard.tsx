@@ -1,12 +1,23 @@
 import Link from 'next/link';
 import type { EntrySummary } from '@/lib/db';
+import { getDict, tagLabel, type Lang } from '@/lib/i18n';
 
 function formatDate(date: string): string {
   const [year, month, day] = date.split('-');
   return `${day}.${month}.${year}`;
 }
 
-export default function EntryCard({ section, entry }: { section: string; entry: EntrySummary }) {
+export default function EntryCard({
+  lang,
+  section,
+  entry,
+}: {
+  lang: Lang;
+  section: string;
+  entry: EntrySummary;
+}) {
+  const dict = getDict(lang);
+
   return (
     <Link
       href={`/${section}/${entry.slug}`}
@@ -18,19 +29,16 @@ export default function EntryCard({ section, entry }: { section: string; entry: 
             key={tag}
             className="rounded-full border border-[#71B280]/40 bg-[#71B280]/10 px-2.5 py-0.5 text-xs font-medium text-[#8fd19e]"
           >
-            {tag}
+            {tagLabel(lang, tag)}
           </span>
         ))}
-        <span className="ml-auto rounded-full border border-[#a78bfa]/40 bg-[#a78bfa]/10 px-2.5 py-0.5 text-xs font-medium text-[#c4b5fd]">
-          {entry.perspective === 'limited' ? 'Limited' : 'Omniscient'}
-        </span>
       </div>
       <h2 className="text-xl font-bold text-gray-100 group-hover:text-white transition">
         {entry.title}
       </h2>
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
-        <span>Released {formatDate(entry.releaseDate)}</span>
-        <span>Edited {formatDate(entry.lastEdited)}</span>
+        <span>{dict.card.released} {formatDate(entry.releaseDate)}</span>
+        <span>{dict.card.edited} {formatDate(entry.lastEdited)}</span>
       </div>
     </Link>
   );

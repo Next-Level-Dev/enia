@@ -19,6 +19,7 @@ body {
   color: #d9d3e3;
   line-height: 1.75;
   font-size: 1.05rem;
+  white-space: pre-wrap;
 }
 
 .markdown > * + * {

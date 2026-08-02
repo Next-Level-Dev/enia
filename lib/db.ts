@@ -2,8 +2,9 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Entry } from './types';
-import { isCategory, isPerspective, isTagForCategory, type Category, type Perspective } from './categories';
+import { isCategory, isTagForCategory, groupTags, TAG_GROUP_LABELS, TAG_GROUPS, type Category } from './categories';
 import { hashPassword } from './password';
+import { migrateSchema } from './schema';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, 'enia.db');
@@ -15,53 +16,9 @@ export const db = new DatabaseSync(DB_PATH);
 db.exec(`
   PRAGMA journal_mode = WAL;
   PRAGMA busy_timeout = 5000;
-
-  CREATE TABLE IF NOT EXISTS entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    author_note TEXT NOT NULL DEFAULT '',
-    content TEXT NOT NULL DEFAULT '',
-    last_edited TEXT NOT NULL,
-    release_date TEXT NOT NULL,
-    category TEXT NOT NULL CHECK (category IN ('worldbuilding', 'story', 'guide')),
-    perspective TEXT NOT NULL DEFAULT 'omniscient' CHECK (perspective IN ('limited', 'omniscient')),
-    tags TEXT NOT NULL DEFAULT '[]',
-    published INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    is_admin INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expires_at INTEGER NOT NULL
-  );
 `);
 
-function ensurePublishedColumn() {
-  const columns = db.prepare(`PRAGMA table_info(entries)`).all() as unknown as { name: string }[];
-  if (columns.some((c) => c.name === 'published')) return;
-  db.exec('ALTER TABLE entries ADD COLUMN published INTEGER NOT NULL DEFAULT 0;');
-  db.exec('UPDATE entries SET published = 1 WHERE published = 0;');
-}
-
-ensurePublishedColumn();
-
-function ensurePerspectiveColumn() {
-  const columns = db.prepare(`PRAGMA table_info(entries)`).all() as unknown as { name: string }[];
-  if (columns.some((c) => c.name === 'perspective')) return;
-  db.exec("ALTER TABLE entries ADD COLUMN perspective TEXT NOT NULL DEFAULT 'omniscient';");
-}
-
-ensurePerspectiveColumn();
+migrateSchema(db);
 
 function ensureAdminUser() {
   const username = process.env.ADMIN_USERNAME ?? 'admin';
@@ -91,7 +48,6 @@ interface EntryRow {
   last_edited: string;
   release_date: string;
   category: string;
-  perspective: string;
   tags: string;
   published: number;
   created_at: string;
@@ -115,7 +71,6 @@ function rowToEntry(row: EntryRow): Entry {
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
-    perspective: row.perspective as Perspective,
     tags: parseTags(row.tags),
     published: row.published === 1,
   };
@@ -127,15 +82,13 @@ export interface EntrySummary {
   lastEdited: string;
   releaseDate: string;
   category: Category;
-  perspective: Perspective;
   tags: string[];
   published: boolean;
 }
 
 export interface ListOptions {
   category?: Category;
-  perspective?: Perspective;
-  tag?: string;
+  tags?: string[];
   sort?: 'release' | 'edited' | 'created';
   order?: 'asc' | 'desc';
   published?: boolean;
@@ -151,13 +104,18 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
     conditions.push('category = :category');
     params.category = options.category;
   }
-  if (options.tag) {
-    conditions.push(`tags LIKE '%' || :tag || '%'`);
-    params.tag = JSON.stringify(options.tag);
-  }
-  if (options.perspective) {
-    conditions.push('perspective = :perspective');
-    params.perspective = options.perspective;
+  if (options.tags && options.tags.length > 0) {
+    let index = 0;
+    for (const group of groupTags(options.category, options.tags)) {
+      const clause = group
+        .map((tag) => {
+          const key = `tag${index++}`;
+          params[key] = JSON.stringify(tag);
+          return `tags LIKE '%' || :${key} || '%'`;
+        })
+        .join(' OR ');
+      conditions.push(`(${clause})`);
+    }
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -168,7 +126,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
 
   return db
     .prepare(
-      `SELECT slug, title, last_edited, release_date, category, perspective, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -180,7 +138,6 @@ function toSummary(row: EntryRow): EntrySummary {
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
-    perspective: row.perspective as Perspective,
     tags: parseTags(row.tags),
     published: row.published === 1,
   };
@@ -206,7 +163,6 @@ export interface EntryInput {
   lastEdited: string;
   releaseDate: string;
   category: Category;
-  perspective: Perspective;
   tags: string[];
   published: boolean;
 }
@@ -235,9 +191,6 @@ export function validateEntryInput(input: unknown): EntryInput {
   const category = typeof raw.category === 'string' ? raw.category : '';
   if (!isCategory(category)) throw new Error('Invalid category');
 
-  const perspective = typeof raw.perspective === 'string' ? raw.perspective : '';
-  if (!isPerspective(perspective)) throw new Error('Invalid perspective');
-
   const authorNote = typeof raw.authorNote === 'string' ? raw.authorNote : '';
   const content = typeof raw.content === 'string' ? raw.content : '';
 
@@ -255,10 +208,15 @@ export function validateEntryInput(input: unknown): EntryInput {
   for (const tag of tags) {
     if (!isTagForCategory(category, tag)) throw new Error(`Tag "${tag}" is not valid for this category`);
   }
+  for (const group of TAG_GROUPS[category]) {
+    if (group.tags.filter((t) => tags.includes(t)).length > 1) {
+      throw new Error(`Only one tag allowed from "${TAG_GROUP_LABELS[group.name] ?? group.name}"`);
+    }
+  }
 
   const published = raw.published === true;
 
-  return { title, authorNote, content, lastEdited, releaseDate, category, perspective, tags, published };
+  return { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
 }
 
 function uniqueSlug(base: string): string {
@@ -273,8 +231,8 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   db.prepare(
-    `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, perspective, tags, published)
-     VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :perspective, :tags, :published)`
+    `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, tags, published)
+     VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
@@ -283,7 +241,6 @@ export function createEntry(input: EntryInput): Entry {
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
-    perspective: input.perspective,
     tags: tagsJson,
     published: input.published ? 1 : 0,
   });
@@ -302,7 +259,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
 
   db.prepare(
     `UPDATE entries SET slug = :slug, title = :title, author_note = :author_note, content = :content,
-     last_edited = :last_edited, release_date = :release_date, category = :category, perspective = :perspective, tags = :tags,
+     last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
   ).run({
@@ -313,7 +270,6 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
-    perspective: input.perspective,
     tags: JSON.stringify(input.tags),
     published: input.published ? 1 : 0,
     id: (existing as { id: number }).id,

@@ -2,17 +2,16 @@ import Link from 'next/link';
 import { listEntries } from '@/lib/db';
 import {
   CATEGORY_TAGS,
-  CATEGORY_TITLES,
-  PERSPECTIVES,
-  PERSPECTIVE_MEANINGS,
-  TAG_MEANINGS,
+  TAG_GROUPS,
+  tagGroupMeanings,
   type Category,
-  type Perspective,
 } from '@/lib/categories';
+import { getDict, tagLabel, type Lang } from '@/lib/i18n';
 import EntryCard from './EntryCard';
 import Tooltip from './Tooltip';
 
 interface CategoryListingProps {
+  lang: Lang;
   section: string;
   category: Category;
   searchParams: Record<string, string | string[] | undefined>;
@@ -20,11 +19,10 @@ interface CategoryListingProps {
 
 function buildUrl(
   section: string,
-  opts: { tag?: string; perspective?: Perspective; sort: 'release' | 'edited'; order: 'asc' | 'desc' }
+  opts: { tags: string[]; sort: 'release' | 'edited'; order: 'asc' | 'desc' }
 ): string {
   const params = new URLSearchParams();
-  if (opts.tag) params.set('tag', opts.tag);
-  if (opts.perspective) params.set('perspective', opts.perspective);
+  for (const tag of opts.tags) params.append('tag', tag);
   if (opts.sort !== 'release') params.set('sort', opts.sort);
   if (opts.order !== 'desc') params.set('order', opts.order);
   const qs = params.toString();
@@ -38,84 +36,86 @@ function pillClass(active: boolean): string {
 }
 
 export default async function CategoryListing({
+  lang,
   section,
   category,
   searchParams,
 }: CategoryListingProps) {
-  const tag = typeof searchParams.tag === 'string' ? searchParams.tag : undefined;
-  const perspectiveParam = searchParams.perspective;
-  const perspective: Perspective | undefined =
-    perspectiveParam === 'limited' || perspectiveParam === 'omniscient' ? perspectiveParam : undefined;
+  const dict = getDict(lang);
+
+  const rawTags = searchParams.tag;
+  const validTags = CATEGORY_TAGS[category];
+  const selectedTags = (Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : []).filter(
+    (t) => validTags.includes(t)
+  );
   const sort = searchParams.sort === 'edited' ? 'edited' : 'release';
   const order = searchParams.order === 'asc' ? 'asc' : 'desc';
 
-  const entries = listEntries({ category, tag, perspective, sort, order });
-  const tagOptions = CATEGORY_TAGS[category];
-  const tagMeanings = tagOptions
-    .map((t) => `• ${t}: ${TAG_MEANINGS[t] ?? 'No description yet.'}`)
-    .join('\n');
+  const entries = listEntries({ category, tags: selectedTags, sort, order });
+  const tagMeanings = tagGroupMeanings(category, validTags, {
+    labelOf: (t) => tagLabel(lang, t),
+    groupLabelOf: (name) => dict.tagGroupLabels[name] ?? '',
+    meaningOf: (t) => dict.tagMeanings[t] ?? dict.noDescriptionYet,
+  });
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-12">
       <h1 className="text-4xl font-extrabold bg-gradient-to-r from-[#71B280] to-[#FFE47A] bg-clip-text text-transparent">
-        {CATEGORY_TITLES[category]}
+        {dict.categoryTitles[category]}
       </h1>
 
       <div className="mt-8 flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[#8a7f9e]">
-            Tags:
-            <Tooltip content={tagMeanings} />
-          </span>
-          <Link className={pillClass(!tag)} href={buildUrl(section, { tag: undefined, sort, order })}>
-            All
-          </Link>
-          {tagOptions.map((t) => (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center text-sm text-[#8a7f9e]">
+              {dict.listing.tags}
+              <Tooltip content={tagMeanings} />
+            </span>
             <Link
-              key={t}
-              className={pillClass(tag === t)}
-              href={buildUrl(section, { tag: t, sort, order })}
+              className={pillClass(selectedTags.length === 0)}
+              href={buildUrl(section, { tags: [], sort, order })}
             >
-              {t}
+              {dict.listing.all}
             </Link>
+          </div>
+          {TAG_GROUPS[category].map((group) => (
+            <div key={group.name} className="flex flex-wrap items-center gap-2">
+              <span className="w-32 shrink-0 text-xs uppercase tracking-wide text-[#8a7f9e]">
+                {dict.tagGroupLabels[group.name] ?? group.name}
+              </span>
+              {group.tags.map((t) => {
+                const active = selectedTags.includes(t);
+                return (
+                  <Link
+                    key={t}
+                    className={pillClass(active)}
+                    href={buildUrl(section, {
+                      tags: active ? selectedTags.filter((x) => x !== t) : [...selectedTags, t],
+                      sort,
+                      order,
+                    })}
+                  >
+                    {tagLabel(lang, t)}
+                  </Link>
+                );
+              })}
+            </div>
           ))}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[#8a7f9e]">
-            Perspective:
-            <Tooltip content={PERSPECTIVES.map((p) => `• ${PERSPECTIVE_MEANINGS[p]}`).join('\n')} />
-          </span>
-          <Link
-            className={pillClass(!perspective)}
-            href={buildUrl(section, { tag, perspective: undefined, sort, order })}
-          >
-            All
-          </Link>
-          {PERSPECTIVES.map((p) => (
-            <Link
-              key={p}
-              className={pillClass(perspective === p)}
-              href={buildUrl(section, { tag, perspective: p, sort, order })}
-            >
-              {p}
-            </Link>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[#8a7f9e]">Sort:</span>
+          <span className="text-sm text-[#8a7f9e]">{dict.listing.sort}</span>
           {(
             [
-              ['Newest', 'release', 'desc'],
-              ['Oldest', 'release', 'asc'],
-              ['Recently edited', 'edited', 'desc'],
+              [dict.listing.newest, 'release', 'desc'],
+              [dict.listing.oldest, 'release', 'asc'],
+              [dict.listing.recentlyEdited, 'edited', 'desc'],
             ] as const
           ).map(([label, s, o]) => (
             <Link
               key={label}
               className={pillClass(sort === s && order === o)}
-              href={buildUrl(section, { tag, perspective, sort: s, order: o })}
+              href={buildUrl(section, { tags: selectedTags, sort: s, order: o })}
             >
               {label}
             </Link>
@@ -125,14 +125,14 @@ export default async function CategoryListing({
 
       {entries.length === 0 ? (
         <p className="mt-12 text-[#8a7f9e]">
-          {tag
-            ? `Nothing tagged "${tag}" here yet.`
-            : 'Nothing here yet. Check back soon.'}
+          {selectedTags.length > 0
+            ? dict.listing.nothingTagged(selectedTags.map((t) => tagLabel(lang, t)).join(', '))
+            : dict.listing.nothingHere}
         </p>
       ) : (
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {entries.map((entry) => (
-            <EntryCard key={entry.slug} section={section} entry={entry} />
+            <EntryCard key={entry.slug} lang={lang} section={section} entry={entry} />
           ))}
         </div>
       )}

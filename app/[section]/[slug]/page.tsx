@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { SECTION_TO_CATEGORY } from '@/lib/categories';
 import { getEntryBySlug } from '@/lib/db';
+import { getLang } from '@/lib/i18n-server';
 import EntryView from '@/components/EntryView';
 
 export default async function EntryPage(props: PageProps<'/[section]/[slug]'>) {
@@ -11,5 +12,6 @@ export default async function EntryPage(props: PageProps<'/[section]/[slug]'>) {
   const entry = getEntryBySlug(slug);
   if (!entry || entry.category !== category || !entry.published) notFound();
 
-  return <EntryView section={section} entry={entry} />;
+  const lang = await getLang();
+  return <EntryView lang={lang} section={section} entry={entry} />;
 }

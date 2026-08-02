@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { CATEGORIES, CATEGORY_TAGS, PERSPECTIVES, PERSPECTIVE_MEANINGS, TAG_MEANINGS, type Category, type Perspective } from '@/lib/categories';
+import { CATEGORIES, CATEGORY_TAGS, TAG_GROUP_LABELS, TAG_GROUPS, TAG_MEANINGS, tagGroupMeanings, type Category } from '@/lib/categories';
 import { COMMAND_COLORS, COMMAND_FONTS, Markdown } from '@/lib/markdown';
 import Tooltip from '@/components/Tooltip';
 
@@ -16,7 +16,6 @@ interface EntryFormProps {
     lastEdited: string;
     releaseDate: string;
     category: Category;
-    perspective: Perspective;
     tags: string[];
     published: boolean;
   };
@@ -34,7 +33,7 @@ const MARKDOWN_NOTES: MarkdownNote[] = [
   { syntax: '*italic*', description: 'emphasized text' },
   { syntax: '~~strike~~', description: 'deleted text' },
   { syntax: '`code`', description: 'inline code' },
-  { syntax: '``` ```', description: 'fenced code block' },
+  { syntax: '```js code```', description: 'fenced code block with a language name (js, ts, css, …)' },
   { syntax: '> quote', description: 'blockquote' },
   { syntax: '- item', description: 'unordered list' },
   { syntax: '1. item', description: 'ordered list' },
@@ -58,7 +57,6 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const [authorNote, setAuthorNote] = useState(initial?.authorNote ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
   const [category, setCategory] = useState<Category>(initial?.category ?? 'worldbuilding');
-  const [perspective, setPerspective] = useState<Perspective>(initial?.perspective ?? 'omniscient');
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? today);
   const [lastEdited, setLastEdited] = useState(initial?.lastEdited ?? today);
@@ -67,9 +65,12 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const [loading, setLoading] = useState(false);
 
   function toggleTag(tag: string) {
-    setTags((current) =>
-      current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag]
-    );
+    setTags((current) => {
+      if (current.includes(tag)) return current.filter((t) => t !== tag);
+      const group = TAG_GROUPS[category].find((g) => g.tags.includes(tag));
+      if (!group) return [...current, tag];
+      return [...current.filter((t) => !group.tags.includes(t)), tag];
+    });
   }
 
   function handleCategoryChange(next: Category) {
@@ -82,7 +83,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     setLoading(true);
     setError('');
 
-    const payload = { title, authorNote, content, lastEdited, releaseDate, category, perspective, tags, published };
+    const payload = { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
 
     try {
       const response = await fetch(
@@ -227,60 +228,41 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
         </p>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-3">
         <legend className="flex items-center gap-1">
           <span className={labelClass}>Tags</span>
           <Tooltip
-            content={CATEGORY_TAGS[category]
-              .map((tag) => `• ${tag}: ${TAG_MEANINGS[tag] ?? 'No description yet.'}`)
-              .join('\n')}
+            content={tagGroupMeanings(category, CATEGORY_TAGS[category], {
+              labelOf: (t) => t,
+              groupLabelOf: (name) => TAG_GROUP_LABELS[name] ?? '',
+              meaningOf: (t) => TAG_MEANINGS[t] ?? 'No description yet.',
+            })}
           />
         </legend>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORY_TAGS[category].map((tag) => {
-            const selected = tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={
-                  selected
-                    ? 'rounded-full border border-[#FFE47A]/60 bg-[#FFE47A]/15 px-3 py-1 text-sm font-medium text-[#FFE47A] transition'
-                    : 'rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white'
-                }
-              >
-                {tag}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-2">
-        <legend className="flex items-center gap-1">
-          <span className={labelClass}>Perspective</span>
-          <Tooltip content={PERSPECTIVES.map((p) => `• ${PERSPECTIVE_MEANINGS[p]}`).join('\n')} />
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {PERSPECTIVES.map((p) => {
-            const active = perspective === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPerspective(p)}
-                className={
-                  active
-                    ? 'rounded-lg border border-[#a78bfa]/60 bg-[#a78bfa]/15 px-3 py-1.5 text-sm font-medium text-[#c4b5fd] transition'
-                    : 'rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white'
-                }
-              >
-                {p}
-              </button>
-            );
-          })}
-        </div>
+        {TAG_GROUPS[category].map((group) => (
+          <div key={group.name} className="flex flex-wrap items-center gap-2">
+            <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-[#8a7f9e]">
+              {TAG_GROUP_LABELS[group.name] ?? group.name}
+            </span>
+            {group.tags.map((tag) => {
+              const selected = tags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={
+                    selected
+                      ? 'rounded-full border border-[#FFE47A]/60 bg-[#FFE47A]/15 px-3 py-1 text-sm font-medium text-[#FFE47A] transition'
+                      : 'rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white'
+                  }
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </fieldset>
 
       </div>
@@ -290,7 +272,9 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
         <ul className="flex flex-1 flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-[#B3B3B3]">
           {MARKDOWN_NOTES.map((note) => (
             <li key={note.syntax} className="flex items-baseline gap-2">
-              <code className="shrink-0 font-mono text-[#FFE47A]">{note.syntax}</code>
+              <code className="shrink-0 whitespace-pre-wrap font-mono text-[#FFE47A]">
+                {note.syntax}
+              </code>
               {note.swatch && (
                 <span
                   className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/20"

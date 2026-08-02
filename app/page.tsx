@@ -1,27 +1,32 @@
 import Link from 'next/link';
+import { getDict } from '@/lib/i18n';
+import { getLang } from '@/lib/i18n-server';
 
-const CARDS = [
-  {
-    href: '/worldbuilding',
-    title: 'Read the documents',
-    description: 'Dive into the world of Enia, its gods and sigils.',
-    accent: 'from-[#71B280]/20 to-transparent',
-  },
-  {
-    href: '/guides',
-    title: 'Start with a short guide!',
-    description: 'The quickest way to get familiar with the setting.',
-    accent: 'from-[#FFE47A]/20 to-transparent',
-  },
-  {
-    href: '/stories',
-    title: 'Read the stories',
-    description: 'Follow the tales told within the world.',
-    accent: 'from-[#a78bfa]/20 to-transparent',
-  },
-];
+export default async function Page() {
+  const lang = await getLang();
+  const dict = getDict(lang);
 
-export default function Page() {
+  const CARDS = [
+    {
+      href: '/worldbuilding',
+      title: dict.home.cards.worldbuildingTitle,
+      description: dict.home.cards.worldbuildingDescription,
+      accent: 'from-[#71B280]/20 to-transparent',
+    },
+    {
+      href: '/guides',
+      title: dict.home.cards.guidesTitle,
+      description: dict.home.cards.guidesDescription,
+      accent: 'from-[#FFE47A]/20 to-transparent',
+    },
+    {
+      href: '/stories',
+      title: dict.home.cards.storiesTitle,
+      description: dict.home.cards.storiesDescription,
+      accent: 'from-[#a78bfa]/20 to-transparent',
+    },
+  ];
+
   return (
     <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl flex-col px-4 sm:px-6 py-12 sm:py-16">
       <div className="flex flex-col items-center justify-center gap-3 text-center">
@@ -29,7 +34,7 @@ export default function Page() {
           Enia
         </h1>
         <p className="text-lg sm:text-xl font-medium text-[#B3B3B3]">
-          World of gods and sigils
+          {dict.home.tagline}
         </p>
       </div>
 
@@ -49,7 +54,7 @@ export default function Page() {
       </div>
 
       <p className="mt-auto pt-14 text-center text-sm font-light text-[#B3B3B3] sm:text-base">
-        A writing project by Utku
+        {dict.home.footer}
       </p>
     </div>
   );

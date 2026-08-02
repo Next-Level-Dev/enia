@@ -46,6 +46,14 @@ function regionStyle(ctx: StyleCtx): CSSProperties {
   return style;
 }
 
+function pushText(segments: ReactNode[], keyPrefix: string, text: string): void {
+  const parts = text.split('\n');
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0) segments.push(<br key={`${keyPrefix}-br-${i}`} />);
+    if (parts[i]) segments.push(parts[i]);
+  }
+}
+
 function applyCommand(
   main: string,
   sub: string | undefined,
@@ -96,6 +104,7 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
   let cursor = 0;
   let key = 0;
   let regionKey = 0;
+  let textChunk = 0;
   let pending: ReactNode[] = [];
   let pendingStyle = regionStyle(ctx);
 
@@ -116,12 +125,12 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
   while (cursor < text.length) {
     const match = text.slice(cursor).match(INLINE_RE);
     if (!match) {
-      pending.push(text.slice(cursor));
+      pushText(pending, `${keyBase}-t${textChunk++}`, text.slice(cursor));
       break;
     }
 
     const index = match.index!;
-    if (index > 0) pending.push(text.slice(cursor, cursor + index));
+    if (index > 0) pushText(pending, `${keyBase}-t${textChunk++}`, text.slice(cursor, cursor + index));
 
     const full = match[0];
     const tokenKey = `${keyBase}-${key++}`;
@@ -203,10 +212,23 @@ function renderBlocks(source: string, ctx: StyleCtx): ReactNode[] {
       continue;
     }
 
-    const fence = trimmed.match(/^```(\w*)\s*$/);
+    const oneLineFence = trimmed.match(/^```([\w+-]*)\s*([\s\S]*)```\s*$/);
+    if (oneLineFence) {
+      nodes.push(
+        <pre key={key++}>
+          <code className={oneLineFence[1] ? `language-${oneLineFence[1]}` : undefined}>
+            {oneLineFence[2].trim()}
+          </code>
+        </pre>
+      );
+      i++;
+      continue;
+    }
+
+    const fence = trimmed.match(/^```([\w+-]*)\s*(.*)$/);
     if (fence) {
       i++;
-      const code: string[] = [];
+      const code: string[] = fence[2] ? [fence[2]] : [];
       while (i < lines.length && !/^```\s*$/.test(lines[i].trim())) {
         code.push(lines[i]);
         i++;
@@ -276,7 +298,7 @@ function renderBlocks(source: string, ctx: StyleCtx): ReactNode[] {
       paragraph.push(lines[i]);
       i++;
     }
-    nodes.push(<p key={key++}>{renderInline(paragraph.join(' '), `${key}`, ctx)}</p>);
+    nodes.push(<p key={key++}>{renderInline(paragraph.join('\n'), `${key}`, ctx)}</p>);
   }
 
   return nodes;

@@ -4,9 +4,7 @@ import { createEntry, listEntries, validateEntryInput, type ListOptions } from '
 import {
   CATEGORY_TAGS,
   isCategory,
-  isPerspective,
   type Category,
-  type Perspective,
 } from '@/lib/categories';
 
 export async function GET(request: NextRequest) {
@@ -15,14 +13,11 @@ export async function GET(request: NextRequest) {
   const categoryParam = searchParams.get('category');
   const category = isCategory(categoryParam ?? undefined) ? (categoryParam as Category) : undefined;
 
-  const perspectiveParam = searchParams.get('perspective');
-  const perspective = isPerspective(perspectiveParam ?? undefined)
-    ? (perspectiveParam as Perspective)
-    : undefined;
-
-  const tag = searchParams.get('tag') ?? undefined;
-  if (category && tag && !CATEGORY_TAGS[category].includes(tag)) {
-    return NextResponse.json({ error: `Tag "${tag}" is not valid for this category` }, { status: 400 });
+  const tags = searchParams.getAll('tag');
+  for (const tag of tags) {
+    if (category && !CATEGORY_TAGS[category].includes(tag)) {
+      return NextResponse.json({ error: `Tag "${tag}" is not valid for this category` }, { status: 400 });
+    }
   }
 
   const sortParam = searchParams.get('sort');
@@ -31,7 +26,7 @@ export async function GET(request: NextRequest) {
   const orderParam = searchParams.get('order');
   const order = orderParam === 'asc' ? ('asc' as const) : ('desc' as const);
 
-  const options: ListOptions = { category, perspective, tag, sort, order };
+  const options: ListOptions = { category, tags, sort, order };
   const entries = listEntries(options);
 
   return NextResponse.json({ entries });
