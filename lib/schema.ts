@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { DatabaseSync } from 'node:sqlite';
+import type { Database } from 'better-sqlite3';
 
 export interface ColumnDef {
   name: string;
@@ -102,16 +102,16 @@ interface ColumnInfo {
   pk: number;
 }
 
-function getColumns(db: DatabaseSync, table: string): Map<string, ColumnInfo> {
+function getColumns(db: Database, table: string): Map<string, ColumnInfo> {
   const rows = db.prepare(`PRAGMA table_info("${table}")`).all() as unknown as ColumnInfo[];
   return new Map(rows.map((r) => [r.name, r]));
 }
 
-function tableExists(db: DatabaseSync, table: string): boolean {
+function tableExists(db: Database, table: string): boolean {
   return !!db.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?`).get(table);
 }
 
-function rebuildTable(db: DatabaseSync, def: TableDef): void {
+function rebuildTable(db: Database, def: TableDef): void {
   const current = getColumns(db, def.name);
   const temp = `${def.name}__migrate`;
   const shared = def.columns.filter((c) => current.has(c.name)).map((c) => `"${c.name}"`);
@@ -127,7 +127,7 @@ function rebuildTable(db: DatabaseSync, def: TableDef): void {
   db.exec(`ALTER TABLE "${temp}" RENAME TO "${def.name}"`);
 }
 
-function reconcileTable(db: DatabaseSync, def: TableDef): void {
+function reconcileTable(db: Database, def: TableDef): void {
   if (!tableExists(db, def.name)) {
     db.exec(`CREATE TABLE ${tableSql(def, def.name)}`);
     return;
@@ -156,7 +156,7 @@ function reconcileTable(db: DatabaseSync, def: TableDef): void {
   }
 }
 
-export function migrateSchema(db: DatabaseSync): void {
+export function migrateSchema(db: Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS ${META_TABLE} (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
 
   const hash = schemaHash();

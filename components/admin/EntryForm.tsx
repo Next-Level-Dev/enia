@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_TAGS, TAG_GROUP_LABELS, TAG_GROUPS, TAG_MEANINGS, tagGroupMeanings, type Category } from '@/lib/categories';
-import { COMMAND_COLORS, COMMAND_FONTS, Markdown } from '@/lib/markdown';
+import { Markdown } from '@/lib/markdown';
 import Tooltip from '@/components/Tooltip';
 
 interface EntryFormProps {

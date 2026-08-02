@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import type { Entry } from './types';
@@ -11,7 +11,7 @@ const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, 'enia.db');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-export const db = new DatabaseSync(DB_PATH);
+export const db = new Database(DB_PATH);
 
 db.exec(`
   PRAGMA journal_mode = WAL;

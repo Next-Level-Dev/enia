@@ -33,9 +33,8 @@ export interface Dict {
   tagGroupLabels: Record<string, string>;
   tagMeanings: Record<string, string>;
   listing: {
-    tags: string;
     sort: string;
-    all: string;
+    reset: string;
     newest: string;
     oldest: string;
     recentlyEdited: string;
@@ -124,9 +123,8 @@ export const DICTS: Record<Lang, Dict> = {
       Optional: 'Can be skipped if needed, without major drawbacks.',
     },
     listing: {
-      tags: 'Tags:',
       sort: 'Sort:',
-      all: 'All',
+      reset: 'Reset filters',
       newest: 'Newest',
       oldest: 'Oldest',
       recentlyEdited: 'Recently edited',
@@ -215,9 +213,8 @@ export const DICTS: Record<Lang, Dict> = {
       Optional: 'Gerekirse atlanabilir, büyük bir kayıp olmaz.',
     },
     listing: {
-      tags: 'Etiketler:',
       sort: 'Sırala:',
-      all: 'Tümü',
+      reset: 'Filtreleri sıfırla',
       newest: 'En yeni',
       oldest: 'En eski',
       recentlyEdited: 'Son düzenlenen',
