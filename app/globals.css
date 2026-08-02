@@ -118,7 +118,19 @@ body {
   margin: 2rem 0;
 }
 
-.markdown img {
+.markdown img,
+.markdown video,
+.markdown audio {
   max-width: 100%;
   border-radius: 0.75rem;
+}
+
+.markdown video {
+  display: block;
+}
+
+.markdown .mk-region strong,
+.markdown .mk-region a,
+.markdown .mk-region del {
+  color: inherit;
 }

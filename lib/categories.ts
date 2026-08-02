@@ -8,18 +8,18 @@ export const PERSPECTIVES: Perspective[] = ['limited', 'omniscient'];
 
 export const PERSPECTIVE_MEANINGS: Record<Perspective, string> = {
   limited:
-    'Limited — the story is told by an unreliable or biased narrator with humanly traits.',
+    'Limited, the story is told by a narrator with humanly limitations that can be unreliable or biased.',
   omniscient:
-    'Omniscient — the story is told by an all-knowing narrator that does not take sides.',
+    'Omniscient, the story is told by an all-knowing narrator that does not align with any views.',
 };
 
 export const TAG_MEANINGS: Record<string, string> = {
-  'Heavy Spoiler': 'Contains major spoilers for the world or its stories.',
-  'Light Spoiler': 'Contains mild spoilers for the world or its stories.',
-  Glimpse: 'A short scene or snapshot, not a full narrative.',
+  'Heavy Spoiler': 'Could contain major spoilers for future stories.',
+  'Light Spoiler': 'Could contain spoilers for existing stories OR small spoilers for future stories.',
+  Glimpse: 'A summary, a scene or a short story from the world.',
   'Üral Series': 'Part of the Üral storyline series.',
-  Recommended: 'Suggested reading to understand the setting.',
-  Optional: 'Extra flavour; safe to skip.',
+  Recommended: 'Should be read to properly understand the world.',
+  Optional: 'Can be skipped if needed, without major drawbacks.',
 };
 
 export const CATEGORY_TAGS: Record<Category, string[]> = {

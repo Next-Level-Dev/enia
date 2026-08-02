@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_TAGS, PERSPECTIVES, PERSPECTIVE_MEANINGS, TAG_MEANINGS, type Category, type Perspective } from '@/lib/categories';
-import { Markdown } from '@/lib/markdown';
+import { COMMAND_COLORS, COMMAND_FONTS, Markdown } from '@/lib/markdown';
 import Tooltip from '@/components/Tooltip';
 
 interface EntryFormProps {
@@ -22,20 +22,32 @@ interface EntryFormProps {
   };
 }
 
-const MARKDOWN_NOTES = [
-  ['# Heading', 'h1 to h6 headings'],
-  ['**bold**', 'strong text'],
-  ['*italic*', 'emphasized text'],
-  ['~~strike~~', 'deleted text'],
-  ['`code`', 'inline code'],
-  ['``` ```', 'fenced code block'],
-  ['> quote', 'blockquote'],
-  ['- item', 'unordered list'],
-  ['1. item', 'ordered list'],
-  ['[text](url)', 'link'],
-  ['[text](site/path)', 'link to a page on this site (e.g. site/stories/slug)'],
-  ['![alt](url)', 'image'],
-  ['---', 'horizontal rule'],
+interface MarkdownNote {
+  syntax: string;
+  description: string;
+  swatch?: string;
+}
+
+const MARKDOWN_NOTES: MarkdownNote[] = [
+  { syntax: '# Heading', description: 'h1 to h6 headings' },
+  { syntax: '**bold**', description: 'strong text' },
+  { syntax: '*italic*', description: 'emphasized text' },
+  { syntax: '~~strike~~', description: 'deleted text' },
+  { syntax: '`code`', description: 'inline code' },
+  { syntax: '``` ```', description: 'fenced code block' },
+  { syntax: '> quote', description: 'blockquote' },
+  { syntax: '- item', description: 'unordered list' },
+  { syntax: '1. item', description: 'ordered list' },
+  { syntax: '[text](url)', description: 'link' },
+  { syntax: '[text](site/path)', description: 'link to a page on this site (e.g. site/stories/ural-chapter-1)' },
+  {
+    syntax: '![alt](url)',
+    description: 'image, video (.mp4/.webm/.mov), or audio (.mp3/.wav/.ogg)',
+  },
+  { syntax: '---', description: 'horizontal rule' },
+  { syntax: '[!start color name]', description: 'light-blue dark-blue light-red dark-red light-green dark-green light-purple light-pink light-yellow light-orange white light-gray dark-gray black' },
+  { syntax: '[!start font name]', description: 'mono sans serif cursive' },
+  { syntax: '[!end]', description: 'changes font and color to default' },
 ];
 
 export default function EntryForm({ mode, initial }: EntryFormProps) {
@@ -286,10 +298,16 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
       <div className="flex flex-col gap-2">
         <h4 className={labelClass}>Markdown details</h4>
         <ul className="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-white/5 p-4 text-xs leading-relaxed text-[#B3B3B3]">
-          {MARKDOWN_NOTES.map(([syntax, description]) => (
-            <li key={syntax} className="flex items-baseline gap-2">
-              <code className="shrink-0 font-mono text-[#FFE47A]">{syntax}</code>
-              <span className="text-[#8a7f9e]">{description}</span>
+          {MARKDOWN_NOTES.map((note) => (
+            <li key={note.syntax} className="flex items-baseline gap-2">
+              <code className="shrink-0 font-mono text-[#FFE47A]">{note.syntax}</code>
+              {note.swatch && (
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/20"
+                  style={{ backgroundColor: note.swatch }}
+                />
+              )}
+              <span className="text-[#8a7f9e]">{note.description}</span>
             </li>
           ))}
         </ul>
