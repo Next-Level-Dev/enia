@@ -9,35 +9,38 @@ import { migrateSchema } from './schema';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, 'enia.db');
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
+let _db: Database.Database | null = null;
 
-export const db = new Database(DB_PATH);
+export function getDB(): Database.Database {
+  if (!_db) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    _db = new Database(DB_PATH);
+    _db.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA busy_timeout = 5000;
+    `);
+    migrateSchema(_db);
+    ensureAdminUser(_db);
+  }
+  return _db;
+}
 
-db.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA busy_timeout = 5000;
-`);
-
-migrateSchema(db);
-
-function ensureAdminUser() {
+function ensureAdminUser(database: Database.Database) {
   const username = process.env.ADMIN_USERNAME ?? 'admin';
   const password = process.env.ADMIN_PASSWORD ?? 'admin';
 
-  const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  const exists = database.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (exists) {
-    db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?').run(username);
+    database.prepare('UPDATE users SET is_admin = 1 WHERE username = ?').run(username);
     return;
   }
 
   const { salt, hash } = hashPassword(password);
-  db.prepare('INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)').run(
+  database.prepare('INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)').run(
     username,
     `${salt}:${hash}`
   );
 }
-
-ensureAdminUser();
 
 interface EntryRow {
   id: number;
@@ -124,7 +127,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
   const direction = options.order === 'asc' ? 'ASC' : 'DESC';
   const orderBy = options.sort ? `ORDER BY ${column} ${direction}, id DESC` : 'ORDER BY id DESC';
 
-  return db
+  return getDB()
     .prepare(
       `SELECT slug, title, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
     )
@@ -148,7 +151,7 @@ export function listEntries(options: ListOptions = {}): EntrySummary[] {
 }
 
 export function getEntryBySlug(slug: string): Entry | undefined {
-  const row = db.prepare('SELECT * FROM entries WHERE slug = ?').get(slug) as unknown as EntryRow | undefined;
+  const row = getDB().prepare('SELECT * FROM entries WHERE slug = ?').get(slug) as unknown as EntryRow | undefined;
   return row ? rowToEntry(row) : undefined;
 }
 
@@ -220,7 +223,7 @@ export function validateEntryInput(input: unknown): EntryInput {
 }
 
 function uniqueSlug(base: string): string {
-  const exists = (candidate: string) => !!db.prepare('SELECT id FROM entries WHERE slug = ?').get(candidate);
+  const exists = (candidate: string) => !!getDB().prepare('SELECT id FROM entries WHERE slug = ?').get(candidate);
   if (!exists(base)) return base;
   let n = 2;
   while (exists(`${base}-${n}`)) n += 1;
@@ -230,7 +233,7 @@ function uniqueSlug(base: string): string {
 export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
-  db.prepare(
+  getDB().prepare(
     `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, tags, published)
      VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
   ).run({
@@ -248,16 +251,14 @@ export function createEntry(input: EntryInput): Entry {
 }
 
 export function updateEntry(slug: string, input: EntryInput): Entry | undefined {
-  const existing = db.prepare('SELECT id FROM entries WHERE slug = ?').get(slug);
+  const existing = getDB().prepare('SELECT id FROM entries WHERE slug = ?').get(slug);
   if (!existing) return undefined;
 
   const newSlug = slugify(input.title);
-  const slugExists = db
-    .prepare('SELECT id FROM entries WHERE slug = ? AND slug != ?')
-    .get(newSlug, slug);
+  const slugExists = getDB().prepare('SELECT id FROM entries WHERE slug = ? AND slug != ?').get(newSlug, slug);
   const finalSlug = slugExists ? uniqueSlug(newSlug) : newSlug;
 
-  db.prepare(
+  getDB().prepare(
     `UPDATE entries SET slug = :slug, title = :title, author_note = :author_note, content = :content,
      last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
      published = :published
@@ -279,14 +280,12 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
 }
 
 export function setEntryPublished(slug: string, published: boolean): Entry | undefined {
-  const result = db
-    .prepare('UPDATE entries SET published = ? WHERE slug = ?')
-    .run(published ? 1 : 0, slug);
+  const result = getDB().prepare('UPDATE entries SET published = ? WHERE slug = ?').run(published ? 1 : 0, slug);
   if (result.changes === 0) return undefined;
   return getEntryBySlug(slug);
 }
 
 export function deleteEntry(slug: string): boolean {
-  const result = db.prepare('DELETE FROM entries WHERE slug = ?').run(slug);
+  const result = getDB().prepare('DELETE FROM entries WHERE slug = ?').run(slug);
   return result.changes > 0;
 }

@@ -145,6 +145,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 get the last 60 lines of logs from the webhook systemctl and update live
 `sudo journalctl -u webhook -n 60 -f`
 
+read the logs of deploy.sh live if you want
+`tail -f /home/ubuntu/deploy.log`
+
 ---
 
 if you wanna edit a file instead of read it, replace "cat" with "sudo nano"
