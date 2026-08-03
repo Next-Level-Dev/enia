@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { db } from './db';
+import { getDB } from './db';
 import { verifyPassword } from './password';
 import type { AdminUser } from './types';
 
@@ -9,7 +9,7 @@ export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 export function createSession(userId: number): { token: string; expiresAt: Date } {
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
-  db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(
+  getDB().prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(
     token,
     userId,
     expiresAt.getTime()
@@ -20,7 +20,7 @@ export function createSession(userId: number): { token: string; expiresAt: Date 
 export function getSessionUser(token: string | undefined): AdminUser | null {
   if (!token) return null;
 
-  const row = db
+  const row = getDB()
     .prepare(
       `SELECT s.user_id, u.username, u.is_admin, s.expires_at
        FROM sessions s JOIN users u ON u.id = s.user_id
@@ -33,7 +33,7 @@ export function getSessionUser(token: string | undefined): AdminUser | null {
   if (!row) return null;
 
   if (row.expires_at < Date.now()) {
-    db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    getDB().prepare('DELETE FROM sessions WHERE token = ?').run(token);
     return null;
   }
 
@@ -42,11 +42,11 @@ export function getSessionUser(token: string | undefined): AdminUser | null {
 
 export function deleteSession(token: string | undefined): void {
   if (!token) return;
-  db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  getDB().prepare('DELETE FROM sessions WHERE token = ?').run(token);
 }
 
 export function findUserByCredentials(username: string, password: string): AdminUser | null {
-  const row = db
+  const row = getDB()
     .prepare('SELECT id, username, password_hash, is_admin FROM users WHERE username = ?')
     .get(username) as unknown as
     | { id: number; username: string; password_hash: string; is_admin: number }
