@@ -5,7 +5,7 @@
 images, videos and sound files are uploaded to cloudflare r2 connected to my 01 gmail, direct file links can then be used in markdown.
 
 connecting to the vps
-> ssh ubuntu@129.151.245.112 -i "C:\Users\utq\Desktop\enia\ssh-key-2026-07-03.key"
+> ssh ubuntu@130.110.245.214 -i "C:\Users\utq\Desktop\enia\ssh-key-2026-08-16.key"
 
 ---
 
@@ -146,7 +146,7 @@ get the last 60 lines of logs from the webhook systemctl and update live
 `sudo journalctl -u webhook -n 60 -f`
 
 read the logs of deploy.sh live if you want
-`tail -f /home/ubuntu/deploy.log`
+`tail -F -n 50 /home/ubuntu/deploy.log`
 
 ---
 
