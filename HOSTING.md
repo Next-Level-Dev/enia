@@ -62,8 +62,26 @@ the actual script triggered on push
 #!/bin/bash
 set -Eeuo pipefail
 
-LOG_FILE="/home/ubuntu/deploy.log"
+LOG_DIR="/home/ubuntu"
+LOG_FILE="$LOG_DIR/deploy.log"
+MAX_LOGS=10
 
+# Rotate previous deployment logs
+for ((i=MAX_LOGS-1; i>=1; i--)); do
+    if [[ -f "$LOG_DIR/deploy-$i.log" ]]; then
+        mv "$LOG_DIR/deploy-$i.log" "$LOG_DIR/deploy-$((i+1)).log"
+    fi
+done
+
+# Current log becomes deploy-1.log
+if [[ -f "$LOG_FILE" ]]; then
+    mv "$LOG_FILE" "$LOG_DIR/deploy-1.log"
+fi
+
+# Remove anything older than the maximum
+rm -f "$LOG_DIR/deploy-$((MAX_LOGS+1)).log"
+
+# Start a completely fresh log for this runtime
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 trap 'echo "!!! DEPLOY FAILED at line $LINENO with exit code $? !!!"' ERR
