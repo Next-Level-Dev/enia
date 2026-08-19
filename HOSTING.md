@@ -60,7 +60,13 @@ the actual script triggered on push
 
 ~~~bash
 #!/bin/bash
-set -e
+set -Eeuo pipefail
+
+LOG_FILE="/home/ubuntu/deploy.log"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+trap 'echo "!!! DEPLOY FAILED at line $LINENO with exit code $? !!!"' ERR
 
 REPO_DIR="/home/ubuntu/enia"
 
@@ -144,6 +150,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 
 get the last 60 lines of logs from the webhook systemctl and update live
 `sudo journalctl -u webhook -n 60 -f`
+
+check caddy logs
+`journalctl -u caddy --no-pager`
 
 read the logs of deploy.sh live if you want
 `tail -F -n 50 /home/ubuntu/deploy.log`
