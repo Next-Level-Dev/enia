@@ -174,6 +174,7 @@ check caddy logs
 
 read the logs of deploy.sh live if you want
 `tail -F -n 50 /home/ubuntu/deploy.log`
+or just `tail deploy.log -f` yk
 
 ---
 
