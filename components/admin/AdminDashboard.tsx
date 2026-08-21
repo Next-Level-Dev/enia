@@ -19,6 +19,18 @@ function formatDate(date: string): string {
   return `${day}.${month}.${year}`;
 }
 
+const TR_FIELD_LABELS: Record<string, string> = {
+  titleTr: 'title',
+  descriptionTr: 'description',
+  contentTr: 'content',
+};
+
+function missingTrFields(entry: EntrySummary): string[] {
+  return Object.keys(TR_FIELD_LABELS).filter(
+    (field) => !entry[field as keyof EntrySummary]
+  );
+}
+
 export interface AdminFilter {
   sort: 'release' | 'edited' | 'created';
   order: 'asc' | 'desc';
@@ -200,7 +212,9 @@ export default function AdminDashboard({
               </tr>
             </thead>
             <tbody>
-              {entries.map((entry) => (
+              {entries.map((entry) => {
+                const missingTr = missingTrFields(entry);
+                return (
                 <tr key={entry.slug} className="border-b border-white/5 last:border-0 hover:bg-white/5">
                   <td className="px-4 py-3">
                     <Link
@@ -213,6 +227,14 @@ export default function AdminDashboard({
                     >
                       {entry.title}
                     </Link>
+                    {missingTr.length > 0 && (
+                      <span
+                        title={`Missing Turkish: ${missingTr.map((f) => TR_FIELD_LABELS[f]).join(', ')}`}
+                        className="ml-2 inline-block rounded-full border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-2 py-0.5 align-middle text-xs font-medium text-[#FFE47A]"
+                      >
+                        No TR
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-[#B3B3B3]">{CATEGORY_TITLES[entry.category]}</td>
                   <td className="px-4 py-3 text-[#B3B3B3]">
@@ -244,7 +266,8 @@ export default function AdminDashboard({
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

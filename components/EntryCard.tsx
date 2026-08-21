@@ -17,6 +17,9 @@ export default function EntryCard({
   entry: EntrySummary;
 }) {
   const dict = getDict(lang);
+  const localizedTitle = lang === 'tr' && entry.titleTr ? entry.titleTr : entry.title;
+  const localizedDescription =
+    lang === 'tr' && entry.descriptionTr ? entry.descriptionTr : entry.description;
 
   return (
     <Link
@@ -34,10 +37,10 @@ export default function EntryCard({
         ))}
       </div>
       <h2 className="text-xl font-bold text-gray-100 group-hover:text-white transition">
-        {entry.title}
+        {localizedTitle}
       </h2>
-      {entry.description && (
-        <p className="text-sm text-[#8a7f9e]">{entry.description}</p>
+      {localizedDescription && (
+        <p className="text-sm text-[#8a7f9e]">{localizedDescription}</p>
       )}
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
         <span>{dict.card.released} {formatDate(entry.releaseDate)}</span>
