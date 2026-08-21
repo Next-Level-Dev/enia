@@ -11,6 +11,7 @@ interface EntryFormProps {
   initial?: {
     slug: string;
     title: string;
+    description: string;
     authorNote: string;
     content: string;
     lastEdited: string;
@@ -32,6 +33,7 @@ const MARKDOWN_NOTES: MarkdownNote[] = [
   { syntax: '**bold**', description: 'strong text' },
   { syntax: '*italic*', description: 'emphasized text' },
   { syntax: '~~strike~~', description: 'deleted text' },
+  { syntax: '||spoiler||', description: 'spoiler text, hidden behind a "Reveal spoiler" button until clicked' },
   { syntax: '`code`', description: 'inline code' },
   { syntax: '```js code```', description: 'fenced code block with a language name (js, ts, css, …)' },
   { syntax: '> quote', description: 'blockquote' },
@@ -54,6 +56,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const today = new Date().toISOString().slice(0, 10);
 
   const [title, setTitle] = useState(initial?.title ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
   const [authorNote, setAuthorNote] = useState(initial?.authorNote ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
   const [category, setCategory] = useState<Category>(initial?.category ?? 'worldbuilding');
@@ -83,7 +86,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     setLoading(true);
     setError('');
 
-    const payload = { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
+    const payload = { title, description, authorNote, content, lastEdited, releaseDate, category, tags, published };
 
     try {
       const response = await fetch(
@@ -129,6 +132,22 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
               onChange={(e) => setTitle(e.target.value)}
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="description" className={labelClass}>
+              Description
+            </label>
+            <textarea
+              id="description"
+              rows={2}
+              className={inputClass}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <p className="text-xs text-[#8a7f9e]">
+              Short summary shown on the entry and its card in the listing. Rendered as plain text.
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -241,7 +260,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
         </legend>
         {TAG_GROUPS[category].map((group) => (
           <div key={group.name} className="flex flex-wrap items-center gap-2">
-            <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-[#8a7f9e]">
+            <span className="shrink-0 text-xs uppercase tracking-wide text-[#8a7f9e] sm:w-24">
               {TAG_GROUP_LABELS[group.name] ?? group.name}
             </span>
             {group.tags.map((tag) => {

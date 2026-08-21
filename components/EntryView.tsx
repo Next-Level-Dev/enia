@@ -56,6 +56,15 @@ export default function EntryView({
           </div>
         </header>
 
+        {entry.description && (
+          <aside className="mt-6 border-l-2 border-[#71B280]/60 pl-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#8fd19e]/70">
+              {dict.view.description}
+            </p>
+            <p className="mt-1 text-gray-200">{entry.description}</p>
+          </aside>
+        )}
+
         {entry.authorNote && (
           <aside className="mt-6 border-l-2 border-[#FFE47A]/60 pl-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-[#FFE47A]/70">

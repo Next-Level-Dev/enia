@@ -1,9 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
+import Spoiler from '@/components/Spoiler';
 
 type Tag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 const INLINE_RE =
-  /(\[!\s*(start|end)\b\s*(?:(color|font)\s+([a-z0-9-]+))?\s*\]|\*\*[^*]+\*\*|~~[^~]+~~|`[^`]+`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|\*[^*]+\*)/i;
+  /(\[!\s*(start|end)\b\s*(?:(color|font)\s+([a-z0-9-]+))?\s*\]|\*\*[^*]+\*\*|~~[^~]+~~|\|\|[^|]+\|\||`[^`]+`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|\*[^*]+\*)/i;
 
 const SITE_LINK_PREFIX = 'site/';
 
@@ -153,6 +154,10 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
       );
     } else if (full.startsWith('~~')) {
       pending.push(<del key={tokenKey}>{renderInline(full.slice(2, -2), tokenKey, ctx)}</del>);
+    } else if (full.startsWith('||')) {
+      pending.push(
+        <Spoiler key={tokenKey}>{renderInline(full.slice(2, -2), tokenKey, ctx)}</Spoiler>
+      );
     } else if (full.startsWith('`')) {
       pending.push(<code key={tokenKey}>{full.slice(1, -1)}</code>);
     } else if (full.startsWith('![')) {

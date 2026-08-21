@@ -11,6 +11,8 @@ export const TAG_MEANINGS: Record<string, string> = {
   Omniscient: 'The story is told by an all-knowing narrator that does not align with any views.',
   Recommended: 'Should be read to properly understand the world.',
   Optional: 'Can be skipped if needed, without major drawbacks.',
+  'Text Only': 'The entry contains only text, without any images or audio/video.',
+  'Media Assisted': 'The entry includes images and/or audio/video alongside the text.',
 };
 
 export interface TagGroup {
@@ -19,12 +21,19 @@ export interface TagGroup {
 }
 
 export const TAG_GROUPS: Record<Category, TagGroup[]> = {
-  worldbuilding: [{ name: 'spoiler', tags: ['Heavy Spoiler', 'Light Spoiler'] }],
+  worldbuilding: [
+    { name: 'spoiler', tags: ['Heavy Spoiler', 'Light Spoiler'] },
+    { name: 'format', tags: ['Text Only', 'Media Assisted'] },
+  ],
   story: [
     { name: 'storyType', tags: ['Glimpse', 'Üral Series'] },
     { name: 'narrator', tags: ['Limited', 'Omniscient'] },
+    { name: 'format', tags: ['Text Only', 'Media Assisted'] },
   ],
-  guide: [{ name: 'reading', tags: ['Recommended', 'Optional'] }],
+  guide: [
+    { name: 'reading', tags: ['Recommended', 'Optional'] },
+    { name: 'format', tags: ['Text Only', 'Media Assisted'] },
+  ],
 };
 
 export const TAG_GROUP_LABELS: Record<string, string> = {
@@ -32,6 +41,7 @@ export const TAG_GROUP_LABELS: Record<string, string> = {
   storyType: 'Story type',
   narrator: 'Narrator',
   reading: 'Reading priority',
+  format: 'Format',
 };
 
 export const CATEGORY_TAGS: Record<Category, string[]> = {

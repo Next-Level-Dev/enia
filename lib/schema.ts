@@ -25,6 +25,7 @@ export const SCHEMA: TableDef[] = [
       { name: 'id', type: 'INTEGER', primaryKey: true, autoIncrement: true },
       { name: 'slug', type: 'TEXT', notNull: true, unique: true },
       { name: 'title', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'description', type: 'TEXT', notNull: true, default: "''" },
       { name: 'author_note', type: 'TEXT', notNull: true, default: "''" },
       { name: 'content', type: 'TEXT', notNull: true, default: "''" },
       { name: 'last_edited', type: 'TEXT', notNull: true, default: "''" },

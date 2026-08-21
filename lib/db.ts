@@ -46,6 +46,7 @@ interface EntryRow {
   id: number;
   slug: string;
   title: string;
+  description: string;
   author_note: string;
   content: string;
   last_edited: string;
@@ -69,6 +70,7 @@ function rowToEntry(row: EntryRow): Entry {
   return {
     slug: row.slug,
     title: row.title,
+    description: row.description,
     authorNote: row.author_note,
     content: row.content,
     lastEdited: row.last_edited,
@@ -82,6 +84,7 @@ function rowToEntry(row: EntryRow): Entry {
 export interface EntrySummary {
   slug: string;
   title: string;
+  description: string;
   lastEdited: string;
   releaseDate: string;
   category: Category;
@@ -129,7 +132,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
 
   return getDB()
     .prepare(
-      `SELECT slug, title, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, description, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -138,6 +141,7 @@ function toSummary(row: EntryRow): EntrySummary {
   return {
     slug: row.slug,
     title: row.title,
+    description: row.description,
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
@@ -161,6 +165,7 @@ export function getAllEntries(options: ListOptions = {}): EntrySummary[] {
 
 export interface EntryInput {
   title: string;
+  description: string;
   authorNote: string;
   content: string;
   lastEdited: string;
@@ -194,6 +199,7 @@ export function validateEntryInput(input: unknown): EntryInput {
   const category = typeof raw.category === 'string' ? raw.category : '';
   if (!isCategory(category)) throw new Error('Invalid category');
 
+  const description = typeof raw.description === 'string' ? raw.description : '';
   const authorNote = typeof raw.authorNote === 'string' ? raw.authorNote : '';
   const content = typeof raw.content === 'string' ? raw.content : '';
 
@@ -219,7 +225,7 @@ export function validateEntryInput(input: unknown): EntryInput {
 
   const published = raw.published === true;
 
-  return { title, authorNote, content, lastEdited, releaseDate, category, tags, published };
+  return { title, description, authorNote, content, lastEdited, releaseDate, category, tags, published };
 }
 
 function uniqueSlug(base: string): string {
@@ -234,11 +240,12 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   getDB().prepare(
-    `INSERT INTO entries (slug, title, author_note, content, last_edited, release_date, category, tags, published)
-     VALUES (:slug, :title, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, description, author_note, content, last_edited, release_date, category, tags, published)
+     VALUES (:slug, :title, :description, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
+    description: input.description,
     author_note: input.authorNote,
     content: input.content,
     last_edited: input.lastEdited,
@@ -259,13 +266,14 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
   const finalSlug = slugExists ? uniqueSlug(newSlug) : newSlug;
 
   getDB().prepare(
-    `UPDATE entries SET slug = :slug, title = :title, author_note = :author_note, content = :content,
+    `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content,
      last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
   ).run({
     slug: finalSlug,
     title: input.title,
+    description: input.description,
     author_note: input.authorNote,
     content: input.content,
     last_edited: input.lastEdited,

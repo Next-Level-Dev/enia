@@ -49,6 +49,7 @@ export interface Dict {
     backTo: string;
     released: string;
     lastEdited: string;
+    description: string;
     authorsNote: string;
   };
   community: {
@@ -104,12 +105,15 @@ export const DICTS: Record<Lang, Dict> = {
       Omniscient: 'Omniscient',
       Recommended: 'Recommended',
       Optional: 'Optional',
+      'Text Only': 'Text Only',
+      'Media Assisted': 'Media Assisted',
     },
     tagGroupLabels: {
       spoiler: 'Spoiler level',
       storyType: 'Story type',
       narrator: 'Narrator',
       reading: 'Reading priority',
+      format: 'Format',
     },
     tagMeanings: {
       'Heavy Spoiler': 'Could contain major spoilers for future stories.',
@@ -121,6 +125,8 @@ export const DICTS: Record<Lang, Dict> = {
       Omniscient: 'The story is told by an all-knowing narrator that does not align with any views.',
       Recommended: 'Should be read to properly understand the world.',
       Optional: 'Can be skipped if needed, without major drawbacks.',
+      'Text Only': 'The entry contains only text, without any images or audio/video.',
+      'Media Assisted': 'The entry includes images and/or audio/video alongside the text.',
     },
     listing: {
       sort: 'Sort:',
@@ -139,6 +145,7 @@ export const DICTS: Record<Lang, Dict> = {
       backTo: 'Back to',
       released: 'Released',
       lastEdited: 'Last edited',
+      description: 'Description',
       authorsNote: 'Author\u2019s note',
     },
     community: {
@@ -192,12 +199,15 @@ export const DICTS: Record<Lang, Dict> = {
       Omniscient: 'Her Şeyi Bilen',
       Recommended: 'Önerilen',
       Optional: 'İsteğe Bağlı',
+      'Text Only': 'Yalnızca Metin',
+      'Media Assisted': 'Medya Destekli',
     },
     tagGroupLabels: {
       spoiler: 'Spoiler seviyesi',
       storyType: 'Hikaye türü',
       narrator: 'Anlatıcı',
       reading: 'Okuma önceliği',
+      format: 'Format',
     },
     tagMeanings: {
       'Heavy Spoiler': 'Gelecekteki hikayeler için büyük spoiler içerebilir.',
@@ -211,6 +221,8 @@ export const DICTS: Record<Lang, Dict> = {
         'Hikaye, hiçbir görüşe bağlı olmayan, her şeyi bilen bir anlatıcı tarafından anlatılır.',
       Recommended: 'Dünyayı doğru anlamak için okunması önerilir.',
       Optional: 'Gerekirse atlanabilir, büyük bir kayıp olmaz.',
+      'Text Only': 'İçerik yalnızca metinden oluşur; görsel veya ses/video içermez.',
+      'Media Assisted': 'İçerik, metinle birlikte görsel ve/veya ses/video içerir.',
     },
     listing: {
       sort: 'Sırala:',
@@ -229,6 +241,7 @@ export const DICTS: Record<Lang, Dict> = {
       backTo: 'Geri dön:',
       released: 'Yayınlandı',
       lastEdited: 'Son düzenleme',
+      description: 'Açıklama',
       authorsNote: 'Yazarın notu',
     },
     community: {

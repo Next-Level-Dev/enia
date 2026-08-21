@@ -22,6 +22,7 @@ export default async function EditEntryPage(props: PageProps<'/admin/[slug]'>) {
           initial={{
             slug: entry.slug,
             title: entry.title,
+            description: entry.description,
             authorNote: entry.authorNote,
             content: entry.content,
             lastEdited: entry.lastEdited,

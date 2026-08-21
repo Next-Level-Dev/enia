@@ -3,6 +3,7 @@ import type { Category } from './categories';
 export interface Entry {
   slug: string;
   title: string;
+  description: string;
   authorNote: string;
   content: string;
   lastEdited: string;

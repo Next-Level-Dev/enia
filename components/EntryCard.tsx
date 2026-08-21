@@ -36,6 +36,9 @@ export default function EntryCard({
       <h2 className="text-xl font-bold text-gray-100 group-hover:text-white transition">
         {entry.title}
       </h2>
+      {entry.description && (
+        <p className="text-sm text-[#8a7f9e]">{entry.description}</p>
+      )}
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
         <span>{dict.card.released} {formatDate(entry.releaseDate)}</span>
         <span>{dict.card.edited} {formatDate(entry.lastEdited)}</span>

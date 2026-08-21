@@ -52,7 +52,7 @@ export default function ListingFilters({ lang, section, category }: ListingFilte
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           {TAG_GROUPS[category].map((group) => (
             <div key={group.name} className="flex flex-wrap items-center gap-2">
-              <span className="flex w-40 shrink-0 items-center gap-1 text-xs uppercase tracking-wide text-[#8a7f9e]">
+              <span className="flex shrink-0 items-center gap-1 text-xs uppercase tracking-wide text-[#8a7f9e] sm:w-40">
                 {dict.tagGroupLabels[group.name] ?? group.name}
                 <Tooltip
                   content={tagGroupMeanings(category, group.tags, {

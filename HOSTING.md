@@ -90,6 +90,7 @@ REPO_DIR="/home/ubuntu/enia"
 
 echo "=== Deploy started at $(date) ==="
 
+pm2 stop enia
 cd "$REPO_DIR"
 
 echo "--- Updating repository ---"
