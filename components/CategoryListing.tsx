@@ -35,6 +35,12 @@ export default async function CategoryListing({
         {dict.categoryTitles[category]}
       </h1>
 
+      {category === 'worldbuilding' && (
+        <aside className="mt-6 rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3">
+          <p className="text-sm text-[#FFE47A]">{dict.listing.worldbuildingWarning}</p>
+        </aside>
+      )}
+
       <div className="mt-8">
         <ListingFilters lang={lang} section={section} category={category} />
       </div>

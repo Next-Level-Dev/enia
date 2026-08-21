@@ -33,6 +33,62 @@ WantedBy=multi-user.target
 
 ---
 
+check the backup service
+`systemctl cat enia-db-backup.service`
+/etc/systemd/system/enia-db-backup.service
+<details>
+<summary>output</summary>
+
+~~~bash
+[Unit]
+Description=Backup Enia SQLite database
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+
+ExecStart=/usr/bin/python3 /home/ubuntu/enia/scripts/backup-db.py
+
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+~~~
+
+</details>
+
+/etc/systemd/system/enia-db-backup.timer
+<>
+[Unit]
+Description=Run Enia SQLite backup every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+
+AccuracySec=30s
+Persistent=true
+
+Unit=enia-db-backup.service
+
+[Install]
+WantedBy=timers.target
+<>
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable --now enia-db-backup.timer
+
+systemctl status enia-db-backup.timer
+
+---
+
 check the rules of the webhook
 `cat /etc/webhook/hooks.json`
 <details>
@@ -176,6 +232,9 @@ check caddy logs
 read the logs of deploy.sh live if you want
 `tail -F -n 50 /home/ubuntu/deploy.log`
 or just `tail deploy.log -f` yk
+
+read backup logs
+`sudo journalctl -u enia-db-backup.service -f`
 
 ---
 

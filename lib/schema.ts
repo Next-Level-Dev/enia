@@ -28,6 +28,10 @@ export const SCHEMA: TableDef[] = [
       { name: 'description', type: 'TEXT', notNull: true, default: "''" },
       { name: 'author_note', type: 'TEXT', notNull: true, default: "''" },
       { name: 'content', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'title_tr', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'description_tr', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'author_note_tr', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'content_tr', type: 'TEXT', notNull: true, default: "''" },
       { name: 'last_edited', type: 'TEXT', notNull: true, default: "''" },
       { name: 'release_date', type: 'TEXT', notNull: true, default: "''" },
       {

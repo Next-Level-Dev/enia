@@ -14,10 +14,14 @@ export default function EntryView({
   lang,
   section,
   entry,
+  viewLang = lang,
+  hasTranslation = false,
 }: {
   lang: Lang;
   section: string;
   entry: Entry;
+  viewLang?: Lang;
+  hasTranslation?: boolean;
 }) {
   const dict = getDict(lang);
   const sectionTitle = dict.sectionTitles[section] ?? section;
@@ -50,11 +54,39 @@ export default function EntryView({
             )}
           </div>
           <h1 className="mt-4 text-4xl font-extrabold text-gray-100">{entry.title}</h1>
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
             <span>{dict.view.released} {formatDate(entry.releaseDate)}</span>
             <span>{dict.view.lastEdited} {formatDate(entry.lastEdited)}</span>
+            {hasTranslation && (
+              <span className="flex gap-1">
+                {(
+                  [
+                    ['en', 'English'],
+                    ['tr', 'Türkçe'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Link
+                    key={value}
+                    href={`/${section}/${entry.slug}?lang=${value}`}
+                    className={
+                      viewLang === value
+                        ? 'rounded-full border border-[#FFE47A]/60 bg-[#FFE47A]/15 px-2 py-0.5 font-medium text-[#FFE47A] transition'
+                        : 'rounded-full border border-white/15 bg-white/5 px-2 py-0.5 font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white'
+                    }
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </span>
+            )}
           </div>
         </header>
+
+        {viewLang === 'tr' && (
+          <aside className="mt-6 rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3">
+            <p className="text-sm text-[#FFE47A]">{dict.view.translationWarning}</p>
+          </aside>
+        )}
 
         {entry.description && (
           <aside className="mt-6 border-l-2 border-[#71B280]/60 pl-4">

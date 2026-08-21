@@ -38,6 +38,7 @@ export interface Dict {
     newest: string;
     oldest: string;
     recentlyEdited: string;
+    worldbuildingWarning: string;
     nothingTagged: (tag: string) => string;
     nothingHere: string;
   };
@@ -51,6 +52,7 @@ export interface Dict {
     lastEdited: string;
     description: string;
     authorsNote: string;
+    translationWarning: string;
   };
   community: {
     title: string;
@@ -134,6 +136,8 @@ export const DICTS: Record<Lang, Dict> = {
       newest: 'Newest',
       oldest: 'Oldest',
       recentlyEdited: 'Recently edited',
+      worldbuildingWarning:
+        'Worldbuilding documents reveal everything about the world. They will help you understand it, but they might take away elements of surprise from the stories.',
       nothingTagged: (tag: string) => `Nothing tagged "${tag}" here yet.`,
       nothingHere: 'Nothing here yet. Check back soon.',
     },
@@ -147,6 +151,8 @@ export const DICTS: Record<Lang, Dict> = {
       lastEdited: 'Last edited',
       description: 'Description',
       authorsNote: 'Author\u2019s note',
+      translationWarning:
+        'Translated entries are not canon. There might be mistakes or missing wordplay \u2014 it is recommended to read in English.',
     },
     community: {
       title: 'Community',
@@ -230,6 +236,8 @@ export const DICTS: Record<Lang, Dict> = {
       newest: 'En yeni',
       oldest: 'En eski',
       recentlyEdited: 'Son düzenlenen',
+      worldbuildingWarning:
+        'Dünya İnşası belgeleri dünya hakkında her şeyi ortaya koyar. Anlamanıza yardımcı olur ama hikayelerdeki sürpriz öğelerden ödün verebilir.',
       nothingTagged: (tag: string) => `Burada "${tag}" etiketli bir şey yok.`,
       nothingHere: 'Burada henüz bir şey yok. Yakında tekrar kontrol et.',
     },
@@ -243,6 +251,8 @@ export const DICTS: Record<Lang, Dict> = {
       lastEdited: 'Son düzenleme',
       description: 'Açıklama',
       authorsNote: 'Yazarın notu',
+      translationWarning:
+        'Çevrilmiş içerikler kanonik değildir. Hatalar veya eksik kelime oyunları olabilir \u2014 İngilizce okumanız önerilir.',
     },
     community: {
       title: 'Topluluk',

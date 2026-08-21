@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
-import type { Entry } from './types';
+import type { Entry, EntryTranslation } from './types';
 import { isCategory, isTagForCategory, groupTags, TAG_GROUP_LABELS, TAG_GROUPS, type Category } from './categories';
 import { hashPassword } from './password';
 import { migrateSchema } from './schema';
@@ -49,6 +49,10 @@ interface EntryRow {
   description: string;
   author_note: string;
   content: string;
+  title_tr: string;
+  description_tr: string;
+  author_note_tr: string;
+  content_tr: string;
   last_edited: string;
   release_date: string;
   category: string;
@@ -66,6 +70,17 @@ function parseTags(raw: string): string[] {
   }
 }
 
+function translationFromRow(row: EntryRow): EntryTranslation | null {
+  const tr = {
+    title: row.title_tr,
+    description: row.description_tr,
+    authorNote: row.author_note_tr,
+    content: row.content_tr,
+  };
+  if (!tr.title && !tr.description && !tr.authorNote && !tr.content) return null;
+  return tr;
+}
+
 function rowToEntry(row: EntryRow): Entry {
   return {
     slug: row.slug,
@@ -73,6 +88,7 @@ function rowToEntry(row: EntryRow): Entry {
     description: row.description,
     authorNote: row.author_note,
     content: row.content,
+    tr: translationFromRow(row),
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
     category: row.category as Category,
@@ -168,6 +184,7 @@ export interface EntryInput {
   description: string;
   authorNote: string;
   content: string;
+  tr: EntryTranslation;
   lastEdited: string;
   releaseDate: string;
   category: Category;
@@ -203,6 +220,15 @@ export function validateEntryInput(input: unknown): EntryInput {
   const authorNote = typeof raw.authorNote === 'string' ? raw.authorNote : '';
   const content = typeof raw.content === 'string' ? raw.content : '';
 
+  const trRaw = typeof raw.tr === 'object' && raw.tr !== null ? (raw.tr as Record<string, unknown>) : {};
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  const tr: EntryTranslation = {
+    title: str(trRaw.title),
+    description: str(trRaw.description),
+    authorNote: str(trRaw.authorNote),
+    content: str(trRaw.content),
+  };
+
   const today = new Date().toISOString().slice(0, 10);
   const lastEdited =
     typeof raw.lastEdited === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastEdited)
@@ -225,7 +251,7 @@ export function validateEntryInput(input: unknown): EntryInput {
 
   const published = raw.published === true;
 
-  return { title, description, authorNote, content, lastEdited, releaseDate, category, tags, published };
+  return { title, description, authorNote, content, tr, lastEdited, releaseDate, category, tags, published };
 }
 
 function uniqueSlug(base: string): string {
@@ -240,14 +266,18 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   getDB().prepare(
-    `INSERT INTO entries (slug, title, description, author_note, content, last_edited, release_date, category, tags, published)
-     VALUES (:slug, :title, :description, :author_note, :content, :last_edited, :release_date, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, release_date, category, tags, published)
+     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :release_date, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
     description: input.description,
     author_note: input.authorNote,
     content: input.content,
+    title_tr: input.tr.title,
+    description_tr: input.tr.description,
+    author_note_tr: input.tr.authorNote,
+    content_tr: input.tr.content,
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
@@ -267,6 +297,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
 
   getDB().prepare(
     `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content,
+     title_tr = :title_tr, description_tr = :description_tr, author_note_tr = :author_note_tr, content_tr = :content_tr,
      last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
@@ -276,6 +307,10 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     description: input.description,
     author_note: input.authorNote,
     content: input.content,
+    title_tr: input.tr.title,
+    description_tr: input.tr.description,
+    author_note_tr: input.tr.authorNote,
+    content_tr: input.tr.content,
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
     category: input.category,
