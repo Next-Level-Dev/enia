@@ -26,20 +26,36 @@ export function getDB(): Database.Database {
 }
 
 function ensureAdminUser(database: Database.Database) {
-  const username = process.env.ADMIN_USERNAME ?? 'admin';
-  const password = process.env.ADMIN_PASSWORD ?? 'admin';
+  const customUsername = process.env.ADMIN_USERNAME;
+  const customPassword = process.env.ADMIN_PASSWORD;
 
-  const exists = database.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  if (customUsername && customPassword) {
+    database
+      .prepare('DELETE FROM users WHERE username = ? AND password_hash = ?')
+      .run('admin', 'admin');
+  }
+
+  const username = customUsername ?? 'admin';
+  const password = customPassword ?? 'admin';
+
+  const exists = database
+    .prepare('SELECT id FROM users WHERE username = ?')
+    .get(username);
+
   if (exists) {
-    database.prepare('UPDATE users SET is_admin = 1 WHERE username = ?').run(username);
+    database
+      .prepare('UPDATE users SET is_admin = 1 WHERE username = ?')
+      .run(username);
     return;
   }
 
   const { salt, hash } = hashPassword(password);
-  database.prepare('INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)').run(
-    username,
-    `${salt}:${hash}`
-  );
+
+  database
+    .prepare(
+      'INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)'
+    )
+    .run(username, `${salt}:${hash}`);
 }
 
 interface EntryRow {
