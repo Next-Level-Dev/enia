@@ -135,3 +135,33 @@ body {
 .markdown .mk-region del {
   color: inherit;
 }
+
+@keyframes tip-nudge {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.08); }
+}
+
+.tip-q {
+  animation: tip-nudge 1.6s ease-in-out infinite;
+}
+
+.tip-q:hover,
+.tip-q:focus-visible {
+  animation-play-state: paused;
+}
+
+@keyframes tip-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tip-panel {
+  animation: tip-pop 0.16s ease-out;
+}
+
+.tip-measure {
+  visibility: hidden;
+  position: absolute;
+  left: 0;
+  top: 0;
+}

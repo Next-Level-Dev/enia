@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
   }
 
   const sortParam = searchParams.get('sort');
-  const sort = sortParam === 'edited' ? ('edited' as const) : ('release' as const);
+  const sort =
+    sortParam === 'year' ? ('year' as const) : sortParam === 'edited' ? ('edited' as const) : ('release' as const);
 
   const orderParam = searchParams.get('order');
   const order = orderParam === 'asc' ? ('asc' as const) : ('desc' as const);

@@ -22,6 +22,7 @@ interface EntryFormProps {
     };
     lastEdited: string;
     releaseDate: string;
+    year: string;
     category: Category;
     tags: string[];
     published: boolean;
@@ -54,6 +55,7 @@ const MARKDOWN_NOTES: MarkdownNote[] = [
   { syntax: '---', description: 'horizontal rule' },
   { syntax: '[!start color name]', description: 'light-blue dark-blue light-red dark-red light-green dark-green light-purple light-pink light-yellow light-orange white light-gray dark-gray black' },
   { syntax: '[!start font name]', description: 'mono sans serif cursive' },
+  { syntax: '[!tip note text]', description: 'inline "?" note — click to show a hint (references, foreign sentences, complex words)' },
   { syntax: '[!end]', description: 'changes font and color to default' },
 ];
 
@@ -73,6 +75,7 @@ const FIELD_LABELS: Record<string, string> = {
   contentTr: 'Content (TR)',
   releaseDate: 'Release date',
   lastEdited: 'Last edited',
+  year: 'Year',
   category: 'Category',
   tags: 'Tags',
   published: 'Visibility',
@@ -94,6 +97,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     contentTr: initial?.tr.content ?? '',
     releaseDate: initial?.releaseDate ?? today,
     lastEdited: initial?.lastEdited ?? today,
+    year: initial?.year && initial.year !== 'unknown' ? initial.year : '',
     category: initial?.category ?? 'worldbuilding',
     tags: initial?.tags ?? [],
     published: initial?.published ?? false,
@@ -112,23 +116,25 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? today);
   const [lastEdited, setLastEdited] = useState(initial?.lastEdited ?? today);
+  const [year, setYear] = useState(initial?.year && initial.year !== 'unknown' ? initial.year : '');
   const [published, setPublished] = useState(initial?.published ?? false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [draft, setDraft] = useState<DraftSnapshot | null>(null);
 
-  useEffect(() => {
+  const [draft, setDraft] = useState<DraftSnapshot | null>(() => {
+    if (typeof window === 'undefined') return null;
     try {
       const raw = window.localStorage.getItem(draftKey);
-      if (!raw) return;
+      if (!raw) return null;
       const parsed = JSON.parse(raw) as DraftSnapshot;
       const differs = Object.entries(parsed.values).some(
         ([key, value]) => JSON.stringify(value) !== JSON.stringify(initialValues[key])
       );
-      if (differs) setDraft(parsed);
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      return differs ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -148,6 +154,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
               contentTr,
               releaseDate,
               lastEdited,
+              year,
               category,
               tags,
               published,
@@ -169,6 +176,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     contentTr,
     releaseDate,
     lastEdited,
+    year,
     category,
     tags,
     published,
@@ -187,6 +195,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     setContentTr(String(v.contentTr ?? ''));
     setReleaseDate(String(v.releaseDate ?? today));
     setLastEdited(String(v.lastEdited ?? today));
+    setYear(String(v.year ?? ''));
     setCategory((v.category as Category) ?? 'worldbuilding');
     setTags(Array.isArray(v.tags) ? v.tags.filter((t): t is string => typeof t === 'string') : []);
     setPublished(v.published === true);
@@ -218,6 +227,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   function handleCategoryChange(next: Category) {
     setCategory(next);
     setTags([]);
+    if (next !== 'story') setYear('');
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -233,6 +243,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
       tr: { title: titleTr, description: descriptionTr, authorNote: authorNoteTr, content: contentTr },
       lastEdited,
       releaseDate,
+      year: category === 'story' ? (year.trim() === '' ? 'unknown' : year.trim()) : 'unknown',
       category,
       tags,
       published,
@@ -390,11 +401,11 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
             </p>
           </div>
 
-      <div className="grid gap-5 sm:grid-cols-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="category" className={labelClass}>
-            Category
-          </label>
+<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  <div className="flex flex-col gap-1.5">
+    <label htmlFor="category" className={labelClass}>
+      Category
+    </label>
           <select
             id="category"
             className={inputClass}
@@ -436,6 +447,28 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
             required
           />
         </div>
+
+        {category === 'story' && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="year" className={labelClass}>
+              Year
+            </label>
+            <input
+              id="year"
+              type="number"
+              min={0}
+              max={9999}
+              step={1}
+              className={inputClass}
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              placeholder="Unknown (default)"
+            />
+            <p className="text-xs text-[#8a7f9e]">
+              The fictional year the story takes place in. Leave empty for unknown.
+            </p>
+          </div>
+        )}
       </div>
 
       <fieldset className="flex flex-col gap-2">

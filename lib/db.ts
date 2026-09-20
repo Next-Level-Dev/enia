@@ -3,8 +3,9 @@ import path from 'node:path';
 import fs from 'node:fs';
 import type { Entry, EntryTranslation } from './types';
 import { isCategory, isTagForCategory, groupTags, TAG_GROUP_LABELS, TAG_GROUPS, type Category } from './categories';
+import { countWords } from './wordcount';
 import { hashPassword } from './password';
-import { migrateSchema } from './schema';
+import { migrateData, migrateSchema } from './schema';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, 'enia.db');
@@ -21,6 +22,7 @@ export function getDB(): Database.Database {
     `);
     migrateSchema(_db);
     ensureAdminUser(_db);
+    migrateData(_db);
   }
   return _db;
 }
@@ -29,14 +31,14 @@ function ensureAdminUser(database: Database.Database) {
   const customUsername = process.env.ADMIN_USERNAME;
   const customPassword = process.env.ADMIN_PASSWORD;
 
+  const username = customUsername ?? 'admin';
+  const password = customPassword ?? 'admin';
+
   if (customUsername && customPassword) {
     database
       .prepare('DELETE FROM users WHERE username = ? AND password_hash = ?')
       .run('admin', 'admin');
   }
-
-  const username = customUsername ?? 'admin';
-  const password = customPassword ?? 'admin';
 
   const exists = database
     .prepare('SELECT id FROM users WHERE username = ?')
@@ -46,16 +48,20 @@ function ensureAdminUser(database: Database.Database) {
     database
       .prepare('UPDATE users SET is_admin = 1 WHERE username = ?')
       .run(username);
-    return;
+  } else {
+    const { salt, hash } = hashPassword(password);
+
+    database
+      .prepare(
+        'INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)'
+      )
+      .run(username, `${salt}:${hash}`);
   }
 
-  const { salt, hash } = hashPassword(password);
-
+  // The env account is the only admin — demote/remove any other admin accounts.
   database
-    .prepare(
-      'INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)'
-    )
-    .run(username, `${salt}:${hash}`);
+    .prepare('DELETE FROM users WHERE is_admin = 1 AND username != ?')
+    .run(username);
 }
 
 interface EntryRow {
@@ -71,6 +77,7 @@ interface EntryRow {
   content_tr: string;
   last_edited: string;
   release_date: string;
+  year: string;
   category: string;
   tags: string;
   published: number;
@@ -107,6 +114,8 @@ function rowToEntry(row: EntryRow): Entry {
     tr: translationFromRow(row),
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
+    year: row.year,
+    wordCount: countWords(row.content),
     category: row.category as Category,
     tags: parseTags(row.tags),
     published: row.published === 1,
@@ -122,6 +131,8 @@ export interface EntrySummary {
   contentTr: string;
   lastEdited: string;
   releaseDate: string;
+  year: string;
+  wordCount: number;
   category: Category;
   tags: string[];
   published: boolean;
@@ -130,7 +141,7 @@ export interface EntrySummary {
 export interface ListOptions {
   category?: Category;
   tags?: string[];
-  sort?: 'release' | 'edited' | 'created';
+  sort?: 'release' | 'edited' | 'created' | 'year';
   order?: 'asc' | 'desc';
   published?: boolean;
 }
@@ -160,14 +171,21 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const column =
-    options.sort === 'edited' ? 'last_edited' : options.sort === 'created' ? 'created_at' : 'release_date';
   const direction = options.order === 'asc' ? 'ASC' : 'DESC';
-  const orderBy = options.sort ? `ORDER BY ${column} ${direction}, id DESC` : 'ORDER BY id DESC';
+  let orderBy: string;
+  if (options.sort === 'created') {
+    orderBy = `ORDER BY created_at ${direction}, id DESC`;
+  } else if (options.sort === 'edited') {
+    orderBy = `ORDER BY last_edited ${direction}, id DESC`;
+  } else if (options.sort === 'year' && options.category === 'story') {
+    orderBy = `ORDER BY CASE WHEN year = 'unknown' THEN 1 ELSE 0 END ASC, CAST(year AS INTEGER) ${direction}, id DESC`;
+  } else {
+    orderBy = options.sort ? `ORDER BY release_date ${direction}, id DESC` : 'ORDER BY id DESC';
+  }
 
   return getDB()
     .prepare(
-      `SELECT slug, title, description, title_tr, description_tr, content_tr, last_edited, release_date, category, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, description, content, title_tr, description_tr, content_tr, last_edited, release_date, year, category, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -182,6 +200,8 @@ function toSummary(row: EntryRow): EntrySummary {
     contentTr: row.content_tr,
     lastEdited: row.last_edited,
     releaseDate: row.release_date,
+    year: row.year,
+    wordCount: countWords(row.content),
     category: row.category as Category,
     tags: parseTags(row.tags),
     published: row.published === 1,
@@ -209,6 +229,7 @@ export interface EntryInput {
   tr: EntryTranslation;
   lastEdited: string;
   releaseDate: string;
+  year: string;
   category: Category;
   tags: string[];
   published: boolean;
@@ -273,7 +294,16 @@ export function validateEntryInput(input: unknown): EntryInput {
 
   const published = raw.published === true;
 
-  return { title, description, authorNote, content, tr, lastEdited, releaseDate, category, tags, published };
+  let year = 'unknown';
+  if (raw.year !== undefined && raw.year !== null && raw.year !== '') {
+    const rawYear = (
+      typeof raw.year === 'number' ? String(raw.year) : typeof raw.year === 'string' ? raw.year.trim() : ''
+    ).trim();
+    if (rawYear !== 'unknown' && !/^\d{1,4}$/.test(rawYear)) throw new Error('Year must be an integer');
+    year = rawYear;
+  }
+
+  return { title, description, authorNote, content, tr, lastEdited, releaseDate, year, category, tags, published };
 }
 
 function uniqueSlug(base: string): string {
@@ -288,8 +318,8 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   getDB().prepare(
-    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, release_date, category, tags, published)
-     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :release_date, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, release_date, year, category, tags, published)
+     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :release_date, :year, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
@@ -302,6 +332,7 @@ export function createEntry(input: EntryInput): Entry {
     content_tr: input.tr.content,
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
+    year: input.year,
     category: input.category,
     tags: tagsJson,
     published: input.published ? 1 : 0,
@@ -320,7 +351,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
   getDB().prepare(
     `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content,
      title_tr = :title_tr, description_tr = :description_tr, author_note_tr = :author_note_tr, content_tr = :content_tr,
-     last_edited = :last_edited, release_date = :release_date, category = :category, tags = :tags,
+     last_edited = :last_edited, release_date = :release_date, year = :year, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
   ).run({
@@ -335,6 +366,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     content_tr: input.tr.content,
     last_edited: input.lastEdited,
     release_date: input.releaseDate,
+    year: input.year,
     category: input.category,
     tags: JSON.stringify(input.tags),
     published: input.published ? 1 : 0,

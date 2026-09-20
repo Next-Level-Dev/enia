@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/session';
 import { getDict, type Lang } from '@/lib/i18n';
 import LanguageSwitch from './LanguageSwitch';
+import GlobalSearch from './GlobalSearch';
 
 export default async function TopBar({ lang }: { lang: Lang }) {
   const user = await getCurrentUser();
@@ -43,6 +44,7 @@ export default async function TopBar({ lang }: { lang: Lang }) {
               {link.label}
             </Link>
           ))}
+          <GlobalSearch lang={lang} />
           <LanguageSwitch lang={lang} />
         </div>
       </nav>

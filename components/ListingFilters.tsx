@@ -19,7 +19,7 @@ interface ListingFiltersProps {
 
 function buildUrl(
   section: string,
-  opts: { tags: string[]; sort: 'release' | 'edited'; order: 'asc' | 'desc' }
+  opts: { tags: string[]; sort: 'release' | 'edited' | 'year'; order: 'asc' | 'desc' }
 ): string {
   const params = new URLSearchParams();
   for (const tag of opts.tags) params.append('tag', tag);
@@ -41,8 +41,25 @@ export default function ListingFilters({ lang, section, category }: ListingFilte
 
   const validTags = CATEGORY_TAGS[category];
   const selectedTags = searchParams.getAll('tag').filter((t) => validTags.includes(t));
-  const sort = searchParams.get('sort') === 'edited' ? 'edited' : 'release';
+  const sort =
+    category === 'story' && searchParams.get('sort') === 'year'
+      ? 'year'
+      : searchParams.get('sort') === 'edited'
+        ? 'edited'
+        : 'release';
   const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+
+  const sortOptions: { label: string; s: 'release' | 'edited' | 'year'; o: 'asc' | 'desc' }[] = [
+    { label: dict.listing.lastReleased, s: 'release', o: 'desc' },
+    { label: dict.listing.firstReleased, s: 'release', o: 'asc' },
+  ];
+  if (category === 'story') {
+    sortOptions.push(
+      { label: dict.listing.firstChronological, s: 'year', o: 'asc' },
+      { label: dict.listing.lastChronological, s: 'year', o: 'desc' }
+    );
+  }
+  sortOptions.push({ label: dict.listing.lastEdited, s: 'edited', o: 'desc' });
 
   const hasActiveFilter = selectedTags.length > 0 || sort !== 'release' || order !== 'desc';
 
@@ -93,13 +110,7 @@ export default function ListingFilters({ lang, section, category }: ListingFilte
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-[#8a7f9e]">{dict.listing.sort}</span>
-        {(
-          [
-            [dict.listing.newest, 'release', 'desc'],
-            [dict.listing.oldest, 'release', 'asc'],
-            [dict.listing.recentlyEdited, 'edited', 'desc'],
-          ] as const
-        ).map(([label, s, o]) => (
+        {sortOptions.map(({ label, s, o }) => (
           <Link
             key={label}
             className={pillClass(sort === s && order === o)}

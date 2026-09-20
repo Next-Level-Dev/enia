@@ -34,6 +34,7 @@ export const SCHEMA: TableDef[] = [
       { name: 'content_tr', type: 'TEXT', notNull: true, default: "''" },
       { name: 'last_edited', type: 'TEXT', notNull: true, default: "''" },
       { name: 'release_date', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'year', type: 'TEXT', notNull: true, default: "'unknown'" },
       {
         name: 'category',
         type: 'TEXT',
@@ -62,6 +63,24 @@ export const SCHEMA: TableDef[] = [
       { name: 'token', type: 'TEXT', primaryKey: true },
       { name: 'user_id', type: 'INTEGER', notNull: true, references: 'users(id) ON DELETE CASCADE' },
       { name: 'expires_at', type: 'INTEGER', notNull: true, default: '0' },
+    ],
+  },
+  {
+    name: 'questions',
+    columns: [
+      { name: 'id', type: 'INTEGER', primaryKey: true, autoIncrement: true },
+      { name: 'name', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'question', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'answer', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'published', type: 'INTEGER', notNull: true, default: '0' },
+      { name: 'created_at', type: 'TEXT', notNull: true, default: "(datetime('now'))" },
+    ],
+  },
+  {
+    name: 'question_ips',
+    columns: [
+      { name: 'ip_hash', type: 'TEXT', primaryKey: true },
+      { name: 'last_at', type: 'INTEGER', notNull: true, default: '0' },
     ],
   },
 ];
@@ -175,6 +194,44 @@ export function migrateSchema(db: Database): void {
   try {
     for (const def of SCHEMA) reconcileTable(db, def);
     db.prepare(`INSERT OR REPLACE INTO ${META_TABLE} (key, value) VALUES (?, ?)`).run(SCHEMA_KEY, hash);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+const DATA_VERSION = 'tag-v2';
+const DATA_KEY = 'data_version';
+
+export function migrateData(db: Database): void {
+  const applied = db.prepare(`SELECT value FROM ${META_TABLE} WHERE key = ?`).get(DATA_KEY) as
+    | { value: string }
+    | undefined;
+  if (applied?.value === DATA_VERSION) return;
+
+  db.exec('BEGIN');
+  try {
+    const rows = db.prepare('SELECT id, tags FROM entries').all() as unknown as
+      | { id: number; tags: string }[]
+      | [];
+    for (const row of rows) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(row.tags);
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(parsed)) continue;
+      const cleaned = parsed
+        .filter((t) => t !== 'Limited' && t !== 'Omniscient')
+        .map((t) => (t === 'Glimpse' ? 'One-Shot' : t));
+      const next = JSON.stringify(cleaned);
+      if (next !== row.tags) {
+        db.prepare('UPDATE entries SET tags = ? WHERE id = ?').run(next, row.id);
+      }
+    }
+    db.prepare(`INSERT OR REPLACE INTO ${META_TABLE} (key, value) VALUES (?, ?)`).run(DATA_KEY, DATA_VERSION);
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');

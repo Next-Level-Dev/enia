@@ -5,10 +5,10 @@ export const CATEGORIES: Category[] = ['worldbuilding', 'story', 'guide'];
 export const TAG_MEANINGS: Record<string, string> = {
   'Heavy Spoiler': 'Could contain major spoilers for future stories.',
   'Light Spoiler': 'Could contain spoilers for existing stories OR small spoilers for future stories.',
-  Glimpse: 'A summary, a scene or a short story from the world.',
+  'One-Shot': 'A summary, a scene or a short story from the world.',
+  'Hito Series': 'Part of the Hito storyline series.',
   'Üral Series': 'Part of the Üral storyline series.',
-  Limited: 'The story is told by a narrator with humanly limitations that can be unreliable or biased.',
-  Omniscient: 'The story is told by an all-knowing narrator that does not align with any views.',
+  'Non-Canon': 'Not part of the canon — set apart from the main timeline.',
   Recommended: 'Should be read to properly understand the world.',
   Optional: 'Can be skipped if needed, without major drawbacks.',
   'Text Only': 'The entry contains only text, without any images or audio/video.',
@@ -26,8 +26,7 @@ export const TAG_GROUPS: Record<Category, TagGroup[]> = {
     { name: 'format', tags: ['Text Only', 'Media Assisted'] },
   ],
   story: [
-    { name: 'storyType', tags: ['Glimpse', 'Üral Series'] },
-    { name: 'narrator', tags: ['Limited', 'Omniscient'] },
+    { name: 'storyType', tags: ['One-Shot', 'Hito Series', 'Üral Series', 'Non-Canon'] },
     { name: 'format', tags: ['Text Only', 'Media Assisted'] },
   ],
   guide: [
@@ -39,7 +38,6 @@ export const TAG_GROUPS: Record<Category, TagGroup[]> = {
 export const TAG_GROUP_LABELS: Record<string, string> = {
   spoiler: 'Spoiler level',
   storyType: 'Story type',
-  narrator: 'Narrator',
   reading: 'Reading priority',
   format: 'Format',
 };

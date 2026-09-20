@@ -33,6 +33,7 @@ export default async function EditEntryPage(props: PageProps<'/admin/[slug]'>) {
             },
             lastEdited: entry.lastEdited,
             releaseDate: entry.releaseDate,
+            year: entry.year,
             category: entry.category,
             tags: entry.tags,
             published: entry.published,

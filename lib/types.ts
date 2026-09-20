@@ -16,6 +16,8 @@ export interface Entry {
   tr: EntryTranslation | null;
   lastEdited: string;
   releaseDate: string;
+  year: string;
+  wordCount: number;
   category: Category;
   tags: string[];
   published: boolean;

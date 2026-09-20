@@ -1,10 +1,11 @@
 import type { CSSProperties, ReactNode } from 'react';
 import Spoiler from '@/components/Spoiler';
+import Tip from '@/components/Tip';
 
 type Tag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 const INLINE_RE =
-  /(\[!\s*(start|end)\b\s*(?:(color|font)\s+([a-z0-9-]+))?\s*\]|\*\*[^*]+\*\*|~~[^~]+~~|\|\|[^|]+\|\||`[^`]+`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|\*[^*]+\*)/i;
+  /(\[!\s*tip(?:\s+([^\]]+))?\]|\[!\s*(start|end)\b\s*(?:(color|font)\s+([a-z0-9-]+))?\s*\]|\*\*[^*]+\*\*|~~[^~]+~~|\|\|[^|]+\|\||`[^`]+`|!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|\*[^*]+\*)/i;
 
 const SITE_LINK_PREFIX = 'site/';
 
@@ -136,9 +137,9 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
     const full = match[0];
     const tokenKey = `${keyBase}-${key++}`;
 
-    if (match[2]) {
+    if (match[3]) {
       const before = regionStyle(ctx);
-      const handled = applyCommand(match[2], match[3], match[4], ctx);
+      const handled = applyCommand(match[3], match[4], match[5], ctx);
       if (handled) {
         const after = regionStyle(ctx);
         if (after.color !== before.color || after.fontFamily !== before.fontFamily) {
@@ -148,6 +149,8 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
       } else {
         pending.push(full);
       }
+    } else if (match[2] !== undefined) {
+      pending.push(<Tip key={tokenKey}>{match[2] ?? ''}</Tip>);
     } else if (full.startsWith('**')) {
       pending.push(
         <strong key={tokenKey}>{renderInline(full.slice(2, -2), tokenKey, ctx)}</strong>
@@ -161,9 +164,9 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
     } else if (full.startsWith('`')) {
       pending.push(<code key={tokenKey}>{full.slice(1, -1)}</code>);
     } else if (full.startsWith('![')) {
-      pending.push(mediaFor(match[6], match[5] ?? '', tokenKey));
+      pending.push(mediaFor(match[7], match[6] ?? '', tokenKey));
     } else if (full.startsWith('[')) {
-      const { href, external } = resolveLink(match[8]);
+      const { href, external } = resolveLink(match[9]);
       pending.push(
         <a
           key={tokenKey}
@@ -171,7 +174,7 @@ function renderInline(text: string, keyBase: string, ctx: StyleCtx): ReactNode[]
           target={external ? '_blank' : undefined}
           rel={external ? 'noopener noreferrer' : undefined}
         >
-          {renderInline(match[7], tokenKey, ctx)}
+          {renderInline(match[8], tokenKey, ctx)}
         </a>
       );
     } else {

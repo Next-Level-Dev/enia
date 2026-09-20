@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { EntrySummary } from '@/lib/db';
 import { getDict, tagLabel, type Lang } from '@/lib/i18n';
+import { formatWordCount } from '@/lib/wordcount';
 
 function formatDate(date: string): string {
   const [year, month, day] = date.split('-');
@@ -36,13 +37,23 @@ export default function EntryCard({
           </span>
         ))}
       </div>
-      <h2 className="text-xl font-bold text-gray-100 group-hover:text-white transition">
-        {localizedTitle}
-      </h2>
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <h2 className="text-xl font-bold text-gray-100 transition group-hover:text-white">
+          {localizedTitle}
+        </h2>
+        <span className="shrink-0 rounded-full border border-[#8a7f9e]/30 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8a7f9e]">
+          {formatWordCount(entry.wordCount)} {dict.card.words}
+        </span>
+      </div>
       {localizedDescription && (
         <p className="text-sm text-[#8a7f9e]">{localizedDescription}</p>
       )}
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
+        {entry.category === 'story' && (
+          <span>
+            {dict.card.year} {entry.year === 'unknown' ? dict.unknownYear : entry.year}
+          </span>
+        )}
         <span>{dict.card.released} {formatDate(entry.releaseDate)}</span>
         <span>{dict.card.edited} {formatDate(entry.lastEdited)}</span>
       </div>

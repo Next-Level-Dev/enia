@@ -95,6 +95,12 @@ export default function AdminDashboard({
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/admin/questions"
+            className="rounded-lg border border-[#71B280]/40 bg-[#71B280]/10 px-4 py-2 text-sm font-semibold text-[#8fd19e] transition hover:bg-[#71B280]/20"
+          >
+            Questions
+          </Link>
+          <Link
             href="/admin/new"
             className="rounded-lg bg-[#23194e] px-4 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#3b144d]"
           >
@@ -205,6 +211,7 @@ export default function AdminDashboard({
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">Tags</th>
+                <th className="px-4 py-3 font-medium">Year</th>
                 <th className="px-4 py-3 font-medium">Released</th>
                 <th className="px-4 py-3 font-medium">Edited</th>
                 <th className="px-4 py-3 font-medium">Visibility</th>
@@ -239,6 +246,13 @@ export default function AdminDashboard({
                   <td className="px-4 py-3 text-[#B3B3B3]">{CATEGORY_TITLES[entry.category]}</td>
                   <td className="px-4 py-3 text-[#B3B3B3]">
                     {entry.tags.length > 0 ? entry.tags.join(', ') : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-[#B3B3B3]">
+                    {entry.category === 'story'
+                      ? entry.year === 'unknown'
+                        ? 'Unknown'
+                        : entry.year
+                      : '—'}
                   </td>
                   <td className="px-4 py-3 text-[#B3B3B3]">{formatDate(entry.releaseDate)}</td>
                   <td className="px-4 py-3 text-[#B3B3B3]">{formatDate(entry.lastEdited)}</td>

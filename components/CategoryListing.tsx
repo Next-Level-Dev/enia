@@ -24,7 +24,12 @@ export default async function CategoryListing({
   const selectedTags = (Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : []).filter(
     (t) => validTags.includes(t)
   );
-  const sort = searchParams.sort === 'edited' ? 'edited' : 'release';
+  const sort =
+    category === 'story' && searchParams.sort === 'year'
+      ? 'year'
+      : searchParams.sort === 'edited'
+        ? 'edited'
+        : 'release';
   const order = searchParams.order === 'asc' ? 'asc' : 'desc';
 
   const entries = listEntries({ category, tags: selectedTags, sort, order });

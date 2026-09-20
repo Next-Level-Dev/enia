@@ -35,9 +35,11 @@ export interface Dict {
   listing: {
     sort: string;
     reset: string;
-    newest: string;
-    oldest: string;
-    recentlyEdited: string;
+    lastReleased: string;
+    firstReleased: string;
+    lastChronological: string;
+    firstChronological: string;
+    lastEdited: string;
     worldbuildingWarning: string;
     nothingTagged: (tag: string) => string;
     nothingHere: string;
@@ -45,25 +47,54 @@ export interface Dict {
   card: {
     released: string;
     edited: string;
+    year: string;
+    words: string;
   };
   view: {
     backTo: string;
     released: string;
     lastEdited: string;
+    year: string;
+    words: string;
     description: string;
     authorsNote: string;
     translationWarning: string;
   };
   community: {
     title: string;
-    comingSoon: string;
-    description: string;
+    spoilerWarning: string;
+    formTitle: string;
+    formHint: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    questionLabel: string;
+    questionPlaceholder: string;
+    submit: string;
+    submitting: string;
+    sent: string;
+    errorRequired: string;
+    errorTooShort: string;
+    errorTooLong: string;
+    errorServer: string;
+    rateLimited: (minutes: number) => string;
+    questionsHeading: string;
+    empty: string;
+    askedBy: (name: string) => string;
+    revealAnswer: string;
+    hideAnswer: string;
   };
   popup: {
     title: string;
     description: string;
   };
+  search: {
+    placeholder: string;
+    pagesLabel: string;
+    questionsLabel: string;
+    noResults: string;
+  };
   noDescriptionYet: string;
+  unknownYear: string;
 }
 
 export const DICTS: Record<Lang, Dict> = {
@@ -77,7 +108,7 @@ export const DICTS: Record<Lang, Dict> = {
       admin: 'Admin',
     },
     home: {
-      tagline: 'World of gods and sigils',
+      tagline: 'World of sorcery and gods',
       cards: {
         worldbuildingTitle: 'Read the documents',
         worldbuildingDescription: 'Dive into the world of Enia, its gods and sigils.',
@@ -101,10 +132,10 @@ export const DICTS: Record<Lang, Dict> = {
     tagLabels: {
       'Heavy Spoiler': 'Heavy Spoiler',
       'Light Spoiler': 'Light Spoiler',
-      Glimpse: 'Glimpse',
+      'One-Shot': 'One-Shot',
+      'Hito Series': 'Hito Series',
       'Üral Series': 'Üral Series',
-      Limited: 'Limited',
-      Omniscient: 'Omniscient',
+      'Non-Canon': 'Non-Canon',
       Recommended: 'Recommended',
       Optional: 'Optional',
       'Text Only': 'Text Only',
@@ -113,7 +144,6 @@ export const DICTS: Record<Lang, Dict> = {
     tagGroupLabels: {
       spoiler: 'Spoiler level',
       storyType: 'Story type',
-      narrator: 'Narrator',
       reading: 'Reading priority',
       format: 'Format',
     },
@@ -121,10 +151,10 @@ export const DICTS: Record<Lang, Dict> = {
       'Heavy Spoiler': 'Could contain major spoilers for future stories.',
       'Light Spoiler':
         'Could contain spoilers for existing stories OR small spoilers for future stories.',
-      Glimpse: 'A summary, a scene or a short story from the world.',
+      'One-Shot': 'A summary, a scene or a short story from the world.',
+      'Hito Series': 'Part of the Hito storyline series.',
       'Üral Series': 'Part of the Üral storyline series.',
-      Limited: 'The story is told by a narrator with humanly limitations that can be unreliable or biased.',
-      Omniscient: 'The story is told by an all-knowing narrator that does not align with any views.',
+      'Non-Canon': 'Not part of the canon, set apart from the main timeline.',
       Recommended: 'Should be read to properly understand the world.',
       Optional: 'Can be skipped if needed, without major drawbacks.',
       'Text Only': 'The entry contains only text, without any images or audio/video.',
@@ -133,9 +163,11 @@ export const DICTS: Record<Lang, Dict> = {
     listing: {
       sort: 'Sort:',
       reset: 'Reset filters',
-      newest: 'Newest',
-      oldest: 'Oldest',
-      recentlyEdited: 'Recently edited',
+      lastReleased: 'Last released',
+      firstReleased: 'First released',
+      lastChronological: 'Last chronological',
+      firstChronological: 'First chronological',
+      lastEdited: 'Last edited',
       worldbuildingWarning:
         'Worldbuilding documents reveal everything about the world. They will help you understand it, but they might take away elements of surprise from the stories.',
       nothingTagged: (tag: string) => `Nothing tagged "${tag}" here yet.`,
@@ -144,11 +176,15 @@ export const DICTS: Record<Lang, Dict> = {
     card: {
       released: 'Released',
       edited: 'Edited',
+      year: 'Year',
+      words: 'words',
     },
     view: {
       backTo: 'Back to',
       released: 'Released',
       lastEdited: 'Last edited',
+      year: 'Year',
+      words: 'words',
       description: 'Description',
       authorsNote: 'Author\u2019s note',
       translationWarning:
@@ -156,14 +192,42 @@ export const DICTS: Record<Lang, Dict> = {
     },
     community: {
       title: 'Community',
-      comingSoon: 'Coming soon',
-      description: 'This page is still under construction. Check back later for community features.',
+      spoilerWarning:
+        'Questions and answers shared here may contain spoilers. Answers are hidden behind a button, reveal them only when you are ready.',
+      formTitle: 'Ask the author a question',
+      formHint:
+        'Your question is not published directly: the author reviews, answers, and publishes it. To keep out spam, submissions are limited to one per hour.',
+      nameLabel: 'Name',
+      namePlaceholder: 'Optional, how should the author address you?',
+      questionLabel: 'Question',
+      questionPlaceholder: 'Ask anything about the world of Enia…',
+      submit: 'Send question',
+      submitting: 'Sending…',
+      sent: 'Sent! Your question is on its way to the author, thanks for asking.',
+      errorRequired: 'Please write a question first.',
+      errorTooShort: 'Your question is too short, please add a few more words.',
+      errorTooLong: 'That question is too long, please keep it under 2000 characters.',
+      errorServer: 'Something went wrong. Please try again in a moment.',
+      rateLimited: (minutes: number) =>
+        `You have already sent a question recently. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+      questionsHeading: 'Questions & answers',
+      empty: 'No questions published yet, be the first to ask!',
+      askedBy: (name: string) => (name ? `Asked by ${name}` : 'Asked anonymously'),
+      revealAnswer: 'Reveal answer',
+      hideAnswer: 'Hide answer',
     },
     popup: {
       title: 'Choose the site language',
       description: 'Which language would you like to view this site in?',
     },
+    search: {
+      placeholder: 'Search…',
+      pagesLabel: 'Pages',
+      questionsLabel: 'Questions',
+      noResults: 'No results found.',
+    },
     noDescriptionYet: 'No description yet.',
+    unknownYear: 'Unknown',
   },
   tr: {
     langName: 'Türkçe',
@@ -175,7 +239,7 @@ export const DICTS: Record<Lang, Dict> = {
       admin: 'Yönetim',
     },
     home: {
-      tagline: 'Tanrıların ve mühürlerin dünyası',
+      tagline: 'Büyücülüğün ve tanrıların dünyası',
       cards: {
         worldbuildingTitle: 'Belgeleri oku',
         worldbuildingDescription: "Enia'nın dünyasına, tanrılarına ve mühürlerine dal.",
@@ -199,10 +263,10 @@ export const DICTS: Record<Lang, Dict> = {
     tagLabels: {
       'Heavy Spoiler': 'Ağır Spoiler',
       'Light Spoiler': 'Hafif Spoiler',
-      Glimpse: 'Kesit',
+      'One-Shot': 'Tek Bölümlük Hikaye',
+      'Hito Series': 'Hito Serisi',
       'Üral Series': 'Üral Serisi',
-      Limited: 'Sınırlı',
-      Omniscient: 'Her Şeyi Bilen',
+      'Non-Canon': 'Kanon Dışı',
       Recommended: 'Önerilen',
       Optional: 'İsteğe Bağlı',
       'Text Only': 'Yalnızca Metin',
@@ -211,7 +275,6 @@ export const DICTS: Record<Lang, Dict> = {
     tagGroupLabels: {
       spoiler: 'Spoiler seviyesi',
       storyType: 'Hikaye türü',
-      narrator: 'Anlatıcı',
       reading: 'Okuma önceliği',
       format: 'Format',
     },
@@ -219,12 +282,10 @@ export const DICTS: Record<Lang, Dict> = {
       'Heavy Spoiler': 'Gelecekteki hikayeler için büyük spoiler içerebilir.',
       'Light Spoiler':
         'Mevcut hikayeler için spoiler ya da gelecekteki hikayeler için küçük spoiler içerebilir.',
-      Glimpse: 'Dünyadan bir özet, bir sahne veya kısa bir hikaye.',
+      'One-Shot': 'Dünyadan bir özet, bir sahne veya kısa bir hikaye.',
+      'Hito Series': 'Hito hikaye serisinin bir parçası.',
       'Üral Series': 'Üral hikaye serisinin bir parçası.',
-      Limited:
-        'Hikaye, insani sınırları olan, güvenilmez veya taraflı olabilen bir anlatıcı tarafından anlatılır.',
-      Omniscient:
-        'Hikaye, hiçbir görüşe bağlı olmayan, her şeyi bilen bir anlatıcı tarafından anlatılır.',
+      'Non-Canon': 'Kanonun bir parçası değil, ana zaman çizgisinden ayrı.',
       Recommended: 'Dünyayı doğru anlamak için okunması önerilir.',
       Optional: 'Gerekirse atlanabilir, büyük bir kayıp olmaz.',
       'Text Only': 'İçerik yalnızca metinden oluşur; görsel veya ses/video içermez.',
@@ -233,22 +294,28 @@ export const DICTS: Record<Lang, Dict> = {
     listing: {
       sort: 'Sırala:',
       reset: 'Filtreleri sıfırla',
-      newest: 'En yeni',
-      oldest: 'En eski',
-      recentlyEdited: 'Son düzenlenen',
+      lastReleased: 'Son yayınlanan',
+      firstReleased: 'İlk yayınlanan',
+      lastChronological: 'Kronolojik son',
+      firstChronological: 'Kronolojik ilk',
+      lastEdited: 'Son düzenlenen',
       worldbuildingWarning:
-        'Dünya İnşası belgeleri dünya hakkında her şeyi ortaya koyar. Anlamanıza yardımcı olur ama hikayelerdeki sürpriz öğelerden ödün verebilir.',
+        'Dünya İnşası belgeleri dünya hakkında her şeyi ortaya koyar. Anlamanıza yardımcı olur ama hikayelerdeki sürpriz unsurlarını bozabilir.',
       nothingTagged: (tag: string) => `Burada "${tag}" etiketli bir şey yok.`,
       nothingHere: 'Burada henüz bir şey yok. Yakında tekrar kontrol et.',
     },
     card: {
       released: 'Yayınlandı',
       edited: 'Düzenlendi',
+      year: 'Yıl',
+      words: 'kelime',
     },
     view: {
       backTo: 'Geri dön:',
       released: 'Yayınlandı',
       lastEdited: 'Son düzenleme',
+      year: 'Yıl',
+      words: 'kelime',
       description: 'Açıklama',
       authorsNote: 'Yazarın notu',
       translationWarning:
@@ -256,15 +323,42 @@ export const DICTS: Record<Lang, Dict> = {
     },
     community: {
       title: 'Topluluk',
-      comingSoon: 'Çok yakında',
-      description:
-        'Bu sayfa hâlâ yapım aşamasında. Topluluk özellikleri için daha sonra tekrar gel.',
+      spoilerWarning:
+        'Burada paylaşılan soru ve cevaplar spoiler (sürpriz bozan) içerik barındırabilir. Cevaplar bir düğmenin arkasında saklanır, yalnızca hazır olduğunuzda açın.',
+      formTitle: 'Yazara soru sor',
+      formHint:
+        'Sorunuz doğrudan yayınlanmaz: yazar inceler, yanıtlar ve yayınlar. Spam\u2019i önlemek için gönderimler saatte bir ile sınırlıdır.',
+      nameLabel: 'İsim',
+      namePlaceholder: 'İsteğe bağlı, yazar size nasıl hitap etsin?',
+      questionLabel: 'Soru',
+      questionPlaceholder: 'Enia dünyası hakkında her şeyi sorabilirsin…',
+      submit: 'Soruyu gönder',
+      submitting: 'Gönderiliyor…',
+      sent: 'Gönderildi! Sorunuz yazara ulaştı, sorduğunuz için teşekkürler.',
+      errorRequired: 'Lütfen önce bir soru yazın.',
+      errorTooShort: 'Sorunuz çok kısa, lütfen birkaç kelime daha ekleyin.',
+      errorTooLong: 'Bu soru çok uzun, lütfen 2000 karakterin altında tutun.',
+      errorServer: 'Bir şeyler ters gitti. Lütfen birazdan tekrar deneyin.',
+      rateLimited: (minutes: number) =>
+        `Son zamanlarda bir soru gönderdiniz. Lütfen ${minutes} dakika sonra tekrar deneyin.`,
+      questionsHeading: 'Sorular ve cevaplar',
+      empty: 'Henüz yayınlanmış soru yok, ilk soran siz olun!',
+      askedBy: (name: string) => (name ? `${name} sordu` : 'Anonim olarak soruldu'),
+      revealAnswer: 'Cevabı göster',
+      hideAnswer: 'Cevabı gizle',
     },
     popup: {
       title: 'Site dilini seç',
       description: 'Bu siteyi hangi dilde görüntülemek istersin?',
     },
+    search: {
+      placeholder: 'Ara…',
+      pagesLabel: 'Sayfalar',
+      questionsLabel: 'Sorular',
+      noResults: 'Sonuç bulunamadı.',
+    },
     noDescriptionYet: 'Henüz açıklama yok.',
+    unknownYear: 'Bilinmiyor',
   },
 };
 

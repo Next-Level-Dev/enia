@@ -3,6 +3,7 @@ import type { Entry } from '@/lib/types';
 import { Markdown } from '@/lib/markdown';
 import { getDict, tagLabel, type Lang } from '@/lib/i18n';
 import { tagGroupMeanings } from '@/lib/categories';
+import { formatWordCount } from '@/lib/wordcount';
 import Tooltip from './Tooltip';
 
 function formatDate(date: string): string {
@@ -55,6 +56,14 @@ export default function EntryView({
           </div>
           <h1 className="mt-4 text-4xl font-extrabold text-gray-100">{entry.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
+            <span>
+              {dict.view.words} {formatWordCount(entry.wordCount)}
+            </span>
+            {entry.category === 'story' && (
+              <span>
+                {dict.view.year} {entry.year === 'unknown' ? dict.unknownYear : entry.year}
+              </span>
+            )}
             <span>{dict.view.released} {formatDate(entry.releaseDate)}</span>
             <span>{dict.view.lastEdited} {formatDate(entry.lastEdited)}</span>
             {hasTranslation && (
