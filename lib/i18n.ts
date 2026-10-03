@@ -59,6 +59,7 @@ export interface Dict {
     description: string;
     authorsNote: string;
     translationWarning: string;
+    translationOutdated: (edited: string, translated: string) => string;
   };
   community: {
     title: string;
@@ -189,6 +190,8 @@ export const DICTS: Record<Lang, Dict> = {
       authorsNote: 'Author\u2019s note',
       translationWarning:
         'Translated entries are not canon. There might be mistakes or missing wordplay \u2014 it is recommended to read in English.',
+      translationOutdated: (edited, translated) =>
+        `This post was edited ${edited} but the translation was done on ${translated}, it might not be up to date.`,
     },
     community: {
       title: 'Community',
@@ -319,7 +322,9 @@ export const DICTS: Record<Lang, Dict> = {
       description: 'Açıklama',
       authorsNote: 'Yazarın notu',
       translationWarning:
-        'Çevrilmiş içerikler kanonik değildir. Hatalar veya eksik kelime oyunları olabilir \u2014 İngilizce okumanız önerilir.',
+        'Çevrilmiş içerikler kanonik değildir. Hatalar veya eksik kelime oyunları olabilir — İngilizce okumanız önerilir.',
+      translationOutdated: (edited, translated) =>
+        `Bu yazı ${edited} tarihinde düzenlendi ancak çevirisi ${translated} tarihinde yapıldı, güncel olmayabilir.`,
     },
     community: {
       title: 'Topluluk',

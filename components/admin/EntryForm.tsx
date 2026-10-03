@@ -21,6 +21,7 @@ interface EntryFormProps {
       content: string;
     };
     lastEdited: string;
+    lastTranslated: string;
     releaseDate: string;
     year: string;
     category: Category;
@@ -75,6 +76,7 @@ const FIELD_LABELS: Record<string, string> = {
   contentTr: 'Content (TR)',
   releaseDate: 'Release date',
   lastEdited: 'Last edited',
+  lastTranslated: 'Last translated',
   year: 'Year',
   category: 'Category',
   tags: 'Tags',
@@ -96,7 +98,8 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     authorNoteTr: initial?.tr.authorNote ?? '',
     contentTr: initial?.tr.content ?? '',
     releaseDate: initial?.releaseDate ?? today,
-    lastEdited: initial?.lastEdited ?? today,
+    lastEdited: today,
+    lastTranslated: initial?.lastTranslated ?? today,
     year: initial?.year && initial.year !== 'unknown' ? initial.year : '',
     category: initial?.category ?? 'worldbuilding',
     tags: initial?.tags ?? [],
@@ -115,7 +118,8 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const [category, setCategory] = useState<Category>(initial?.category ?? 'worldbuilding');
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? today);
-  const [lastEdited, setLastEdited] = useState(initial?.lastEdited ?? today);
+  const [lastEdited, setLastEdited] = useState(today);
+  const [lastTranslated, setLastTranslated] = useState(initial?.lastTranslated ?? today);
   const [year, setYear] = useState(initial?.year && initial.year !== 'unknown' ? initial.year : '');
   const [published, setPublished] = useState(initial?.published ?? false);
   const [error, setError] = useState('');
@@ -154,6 +158,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
               contentTr,
               releaseDate,
               lastEdited,
+              lastTranslated,
               year,
               category,
               tags,
@@ -176,6 +181,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     contentTr,
     releaseDate,
     lastEdited,
+    lastTranslated,
     year,
     category,
     tags,
@@ -195,6 +201,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
     setContentTr(String(v.contentTr ?? ''));
     setReleaseDate(String(v.releaseDate ?? today));
     setLastEdited(String(v.lastEdited ?? today));
+    setLastTranslated(String(v.lastTranslated ?? initial?.lastTranslated ?? today));
     setYear(String(v.year ?? ''));
     setCategory((v.category as Category) ?? 'worldbuilding');
     setTags(Array.isArray(v.tags) ? v.tags.filter((t): t is string => typeof t === 'string') : []);
@@ -242,6 +249,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
       content,
       tr: { title: titleTr, description: descriptionTr, authorNote: authorNoteTr, content: contentTr },
       lastEdited,
+      lastTranslated,
       releaseDate,
       year: category === 'story' ? (year.trim() === '' ? 'unknown' : year.trim()) : 'unknown',
       category,
@@ -279,6 +287,9 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
   const inputClass =
     'w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-gray-100 placeholder:text-[#8a7f9e] outline-none transition focus:border-[#71B280]/70 focus:bg-white/10';
   const labelClass = 'text-sm font-medium text-gray-200';
+  const currentInputClass =
+    'w-full cursor-not-allowed rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[#8a7f9e] opacity-60 outline-none';
+  const dateHintClass = 'text-xs font-medium uppercase tracking-wide text-[#8a7f9e]';
 
   const isTr = lang === 'tr';
   const values = {
@@ -401,7 +412,7 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
             </p>
           </div>
 
-<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
   <div className="flex flex-col gap-1.5">
     <label htmlFor="category" className={labelClass}>
       Category
@@ -434,20 +445,6 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="lastEdited" className={labelClass}>
-            Last edited
-          </label>
-          <input
-            id="lastEdited"
-            type="date"
-            className={inputClass}
-            value={lastEdited}
-            onChange={(e) => setLastEdited(e.target.value)}
-            required
-          />
-        </div>
-
         {category === 'story' && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="year" className={labelClass}>
@@ -469,6 +466,58 @@ export default function EntryForm({ mode, initial }: EntryFormProps) {
             </p>
           </div>
         )}
+
+        <div className="flex flex-col gap-2">
+          <span className={labelClass}>Last edited</span>
+          {mode === 'edit' && (
+            <div className="flex flex-col gap-1.5">
+              <span className={dateHintClass}>Current</span>
+              <input
+                type="date"
+                className={currentInputClass}
+                value={initial?.lastEdited ?? today}
+                disabled
+                readOnly
+              />
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="lastEdited" className={dateHintClass}>
+              {mode === 'edit' ? 'New' : 'Date'}
+            </label>
+            <input
+              id="lastEdited"
+              type="date"
+              className={inputClass}
+              value={lastEdited}
+              onChange={(e) => setLastEdited(e.target.value)}
+              required
+            />
+          </div>
+          <p className="text-xs text-[#8a7f9e]">
+            {mode === 'edit'
+              ? 'Defaults to today on every edit. Set an earlier date to keep a custom one.'
+              : 'Set an earlier date if it should not be today.'}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="lastTranslated" className={labelClass}>
+            Last translated
+          </label>
+          <input
+            id="lastTranslated"
+            type="date"
+            className={inputClass}
+            value={lastTranslated}
+            onChange={(e) => setLastTranslated(e.target.value)}
+            required
+          />
+          <p className="text-xs text-[#8a7f9e]">
+            When the Türkçe version was last brought up to date with the English one. Never changed
+            automatically — bump it by hand once you have retranslated.
+          </p>
+        </div>
       </div>
 
       <fieldset className="flex flex-col gap-2">

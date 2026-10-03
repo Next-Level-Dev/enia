@@ -15,6 +15,7 @@ export interface Entry {
   content: string;
   tr: EntryTranslation | null;
   lastEdited: string;
+  lastTranslated: string;
   releaseDate: string;
   year: string;
   wordCount: number;

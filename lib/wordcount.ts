@@ -4,6 +4,7 @@ export function countWords(text: string): number {
 }
 
 export function formatWordCount(count: number): string {
-  if (count >= 1000) return `${Math.round(count / 1000)}k`;
-  return String(count);
+  if (count < 1000) return String(count);
+  const thousands = Math.round(count / 100) / 10;
+  return `${String(thousands).replace('.', ',')}k`;
 }

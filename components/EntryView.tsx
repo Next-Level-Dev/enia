@@ -3,6 +3,7 @@ import type { Entry } from '@/lib/types';
 import { Markdown } from '@/lib/markdown';
 import { getDict, tagLabel, type Lang } from '@/lib/i18n';
 import { tagGroupMeanings } from '@/lib/categories';
+import { formatDateDMY, isBefore } from '@/lib/dates';
 import { formatWordCount } from '@/lib/wordcount';
 import Tooltip from './Tooltip';
 
@@ -92,9 +93,21 @@ export default function EntryView({
         </header>
 
         {viewLang === 'tr' && (
-          <aside className="mt-6 rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3">
-            <p className="text-sm text-[#FFE47A]">{dict.view.translationWarning}</p>
-          </aside>
+          <>
+            <aside className="mt-6 rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3">
+              <p className="text-sm text-[#FFE47A]">{dict.view.translationWarning}</p>
+            </aside>
+            {hasTranslation && isBefore(entry.lastTranslated, entry.lastEdited) && (
+              <aside className="mt-3 rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3">
+                <p className="text-sm text-[#FFE47A]">
+                  {dict.view.translationOutdated(
+                    formatDateDMY(entry.lastEdited),
+                    formatDateDMY(entry.lastTranslated)
+                  )}
+                </p>
+              </aside>
+            )}
+          </>
         )}
 
         {entry.description && (

@@ -76,6 +76,7 @@ interface EntryRow {
   author_note_tr: string;
   content_tr: string;
   last_edited: string;
+  last_translated: string;
   release_date: string;
   year: string;
   category: string;
@@ -113,6 +114,7 @@ function rowToEntry(row: EntryRow): Entry {
     content: row.content,
     tr: translationFromRow(row),
     lastEdited: row.last_edited,
+    lastTranslated: row.last_translated || row.last_edited,
     releaseDate: row.release_date,
     year: row.year,
     wordCount: countWords(row.content),
@@ -228,6 +230,7 @@ export interface EntryInput {
   content: string;
   tr: EntryTranslation;
   lastEdited: string;
+  lastTranslated: string;
   releaseDate: string;
   year: string;
   category: Category;
@@ -273,14 +276,11 @@ export function validateEntryInput(input: unknown): EntryInput {
   };
 
   const today = new Date().toISOString().slice(0, 10);
-  const lastEdited =
-    typeof raw.lastEdited === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastEdited)
-      ? raw.lastEdited
-      : today;
-  const releaseDate =
-    typeof raw.releaseDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.releaseDate)
-      ? raw.releaseDate
-      : today;
+  const dateOr = (value: unknown, fallback: string) =>
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback;
+  const lastEdited = dateOr(raw.lastEdited, today);
+  const lastTranslated = dateOr(raw.lastTranslated, today);
+  const releaseDate = dateOr(raw.releaseDate, today);
 
   const tags = Array.isArray(raw.tags) ? raw.tags.filter((t): t is string => typeof t === 'string') : [];
   for (const tag of tags) {
@@ -303,7 +303,20 @@ export function validateEntryInput(input: unknown): EntryInput {
     year = rawYear;
   }
 
-  return { title, description, authorNote, content, tr, lastEdited, releaseDate, year, category, tags, published };
+  return {
+    title,
+    description,
+    authorNote,
+    content,
+    tr,
+    lastEdited,
+    lastTranslated,
+    releaseDate,
+    year,
+    category,
+    tags,
+    published,
+  };
 }
 
 function uniqueSlug(base: string): string {
@@ -318,8 +331,8 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   getDB().prepare(
-    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, release_date, year, category, tags, published)
-     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :release_date, :year, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, last_translated, release_date, year, category, tags, published)
+     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :last_translated, :release_date, :year, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
@@ -331,6 +344,7 @@ export function createEntry(input: EntryInput): Entry {
     author_note_tr: input.tr.authorNote,
     content_tr: input.tr.content,
     last_edited: input.lastEdited,
+    last_translated: input.lastTranslated,
     release_date: input.releaseDate,
     year: input.year,
     category: input.category,
@@ -351,7 +365,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
   getDB().prepare(
     `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content,
      title_tr = :title_tr, description_tr = :description_tr, author_note_tr = :author_note_tr, content_tr = :content_tr,
-     last_edited = :last_edited, release_date = :release_date, year = :year, category = :category, tags = :tags,
+     last_edited = :last_edited, last_translated = :last_translated, release_date = :release_date, year = :year, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
   ).run({
@@ -365,6 +379,7 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     author_note_tr: input.tr.authorNote,
     content_tr: input.tr.content,
     last_edited: input.lastEdited,
+    last_translated: input.lastTranslated,
     release_date: input.releaseDate,
     year: input.year,
     category: input.category,

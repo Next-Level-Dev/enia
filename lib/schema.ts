@@ -33,6 +33,7 @@ export const SCHEMA: TableDef[] = [
       { name: 'author_note_tr', type: 'TEXT', notNull: true, default: "''" },
       { name: 'content_tr', type: 'TEXT', notNull: true, default: "''" },
       { name: 'last_edited', type: 'TEXT', notNull: true, default: "''" },
+      { name: 'last_translated', type: 'TEXT', notNull: true, default: "''" },
       { name: 'release_date', type: 'TEXT', notNull: true, default: "''" },
       { name: 'year', type: 'TEXT', notNull: true, default: "'unknown'" },
       {
@@ -201,7 +202,7 @@ export function migrateSchema(db: Database): void {
   }
 }
 
-const DATA_VERSION = 'tag-v2';
+const DATA_VERSION = 'translation-date-v3';
 const DATA_KEY = 'data_version';
 
 export function migrateData(db: Database): void {
@@ -231,6 +232,9 @@ export function migrateData(db: Database): void {
         db.prepare('UPDATE entries SET tags = ? WHERE id = ?').run(next, row.id);
       }
     }
+
+    db.prepare(`UPDATE entries SET last_translated = last_edited WHERE last_translated = ''`).run();
+
     db.prepare(`INSERT OR REPLACE INTO ${META_TABLE} (key, value) VALUES (?, ?)`).run(DATA_KEY, DATA_VERSION);
     db.exec('COMMIT');
   } catch (error) {
