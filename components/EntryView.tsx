@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { Entry } from '@/lib/types';
 import { Markdown } from '@/lib/markdown';
 import { getDict, tagLabel, type Lang } from '@/lib/i18n';
@@ -18,23 +19,35 @@ export default function EntryView({
   entry,
   viewLang = lang,
   hasTranslation = false,
+  showBackLink = true,
+  showLangSwitch = true,
+  children,
 }: {
   lang: Lang;
   section: string;
   entry: Entry;
   viewLang?: Lang;
   hasTranslation?: boolean;
+  /** The admin preview reuses this component, where there is no "back to section" link. */
+  showBackLink?: boolean;
+  showLangSwitch?: boolean;
+  /** Extra context rendered above the article — used by the admin preview. */
+  children?: ReactNode;
 }) {
   const dict = getDict(lang);
   const sectionTitle = dict.sectionTitles[section] ?? section;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-      <Link href={`/${section}`} className="text-sm text-[#8a7f9e] hover:text-white transition">
-        &larr; {dict.view.backTo} {sectionTitle}
-      </Link>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12">
+      {showBackLink && (
+        <Link href={`/${section}`} className="text-sm text-[#8a7f9e] hover:text-white transition">
+          &larr; {dict.view.backTo} {sectionTitle}
+        </Link>
+      )}
 
-      <article className="mt-6">
+      {children}
+
+      <article className={showBackLink ? 'mt-6' : ''}>
         <header className="border-b border-white/10 pb-6">
           <div className="flex flex-wrap gap-2">
             {entry.tags.map((tag) => (
@@ -55,7 +68,7 @@ export default function EntryView({
               />
             )}
           </div>
-          <h1 className="mt-4 text-4xl font-extrabold text-gray-100">{entry.title}</h1>
+          <h1 className="mt-4 font-serif text-4xl font-extrabold text-gray-100">{entry.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
             <span>
               {dict.view.words} {formatWordCount(entry.wordCount)}
@@ -67,7 +80,7 @@ export default function EntryView({
             )}
             <span>{dict.view.released} {formatDate(entry.releaseDate)}</span>
             <span>{dict.view.lastEdited} {formatDate(entry.lastEdited)}</span>
-            {hasTranslation && (
+            {showLangSwitch && hasTranslation && (
               <span className="flex gap-1">
                 {(
                   [
@@ -115,7 +128,7 @@ export default function EntryView({
             <p className="text-xs font-semibold uppercase tracking-widest text-[#8fd19e]/70">
               {dict.view.description}
             </p>
-            <p className="mt-1 text-gray-200">{entry.description}</p>
+            <p className="mt-1 font-serif text-gray-200">{entry.description}</p>
           </aside>
         )}
 
@@ -124,7 +137,7 @@ export default function EntryView({
             <p className="text-xs font-semibold uppercase tracking-widest text-[#FFE47A]/70">
               {dict.view.authorsNote}
             </p>
-            <p className="mt-1 text-[#FFE47A]">{entry.authorNote}</p>
+            <p className="mt-1 font-serif text-[#FFE47A]">{entry.authorNote}</p>
           </aside>
         )}
 

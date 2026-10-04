@@ -1,19 +1,20 @@
 import { redirect } from 'next/navigation';
 import { getCurrentAdmin } from '@/lib/session';
-import EntryForm from '@/components/admin/EntryForm';
+import EntryEditor from '@/components/admin/EntryEditor';
+import type { EditorTab } from '@/components/admin/EditorBottomBar';
 
-export default async function NewEntryPage() {
+export default async function NewEntryPage(props: PageProps<'/admin/new'>) {
   const user = await getCurrentAdmin();
   if (!user) redirect('/admin');
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold bg-gradient-to-r from-[#71B280] to-[#FFE47A] bg-clip-text text-transparent">
-        New entry
-      </h1>
-      <div className="mt-8">
-        <EntryForm mode="create" />
-      </div>
-    </div>
-  );
+  const searchParams = await props.searchParams;
+
+  const tabParam = searchParams.tab;
+  const tab: EditorTab =
+    tabParam === 'draft' || tabParam === 'preview' ? tabParam : 'overview';
+
+  const langParam = searchParams.lang;
+  const lang = langParam === 'tr' ? 'tr' : 'en';
+
+  return <EntryEditor mode="create" initialTab={tab} initialLang={lang} />;
 }

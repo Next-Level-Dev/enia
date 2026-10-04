@@ -28,8 +28,8 @@ export const COMMAND_COLORS: Record<string, string> = {
 
 export const COMMAND_FONTS: Record<string, string> = {
   mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-  sans: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-  serif: 'Georgia, Cambria, "Times New Roman", serif',
+  sans: 'var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  serif: 'var(--font-serif), Georgia, Cambria, "Times New Roman", serif',
   cursive: '"Segoe Script", "Brush Script MT", cursive',
 };
 

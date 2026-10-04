@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-lora);
+}
+
 :root {
   --bg-color: #0e031d;       /* Light off-white background */
   --dot-color: #2f1749;      /* Light gray dots */
@@ -13,6 +18,14 @@ body {
   background-image: radial-gradient(var(--dot-color) 1px, transparent 2px);
   background-size: var(--dot-size) var(--dot-size);
   color: #e5e0ec;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Prose: rendered articles, the editor preview and the draft textbox all share
+   this so the draft looks exactly like the published page. */
+.markdown,
+.prose-input {
+  font-family: var(--font-serif), Georgia, Cambria, serif;
 }
 
 .markdown {

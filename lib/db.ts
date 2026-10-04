@@ -130,8 +130,10 @@ export interface EntrySummary {
   description: string;
   titleTr: string;
   descriptionTr: string;
+  authorNoteTr: string;
   contentTr: string;
   lastEdited: string;
+  lastTranslated: string;
   releaseDate: string;
   year: string;
   wordCount: number;
@@ -187,7 +189,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
 
   return getDB()
     .prepare(
-      `SELECT slug, title, description, content, title_tr, description_tr, content_tr, last_edited, release_date, year, category, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, last_translated, release_date, year, category, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -199,8 +201,10 @@ function toSummary(row: EntryRow): EntrySummary {
     description: row.description,
     titleTr: row.title_tr,
     descriptionTr: row.description_tr,
+    authorNoteTr: row.author_note_tr,
     contentTr: row.content_tr,
     lastEdited: row.last_edited,
+    lastTranslated: row.last_translated || row.last_edited,
     releaseDate: row.release_date,
     year: row.year,
     wordCount: countWords(row.content),

@@ -22,6 +22,7 @@ function formatDate(date: string): string {
 const TR_FIELD_LABELS: Record<string, string> = {
   titleTr: 'title',
   descriptionTr: 'description',
+  authorNoteTr: 'author note',
   contentTr: 'content',
 };
 
@@ -204,7 +205,12 @@ export default function AdminDashboard({
           )}
         </div>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-white/10">
+        <>
+        <div className="mt-6 text-xs text-[#8a7f9e]">
+          Selecting a title opens the editor — overview, draft and preview tabs. View opens the
+          published page instead.
+        </div>
+        <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-[#8a7f9e]">
@@ -225,11 +231,8 @@ export default function AdminDashboard({
                 <tr key={entry.slug} className="border-b border-white/5 last:border-0 hover:bg-white/5">
                   <td className="px-4 py-3">
                     <Link
-                      href={
-                        entry.published
-                          ? `/${CATEGORY_TO_SECTION[entry.category]}/${entry.slug}`
-                          : `/admin/${entry.slug}`
-                      }
+                      href={`/admin/${entry.slug}`}
+                      title="Open the editor"
                       className="font-semibold text-gray-100 hover:text-[#FFE47A] transition"
                     >
                       {entry.title}
@@ -269,12 +272,22 @@ export default function AdminDashboard({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-4">
-                      <Link
-                        href={`/admin/${entry.slug}`}
-                        className="text-sm font-medium text-[#71B280] transition hover:text-[#8fd19e]"
-                      >
-                        Edit
-                      </Link>
+                      {entry.published ? (
+                        <Link
+                          href={`/${CATEGORY_TO_SECTION[entry.category]}/${entry.slug}`}
+                          title="Open the published page"
+                          className="text-sm font-medium text-[#71B280] transition hover:text-[#8fd19e]"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span
+                          title="This entry is private, so there is no page to view yet."
+                          className="cursor-not-allowed text-sm font-medium text-[#8a7f9e] opacity-60"
+                        >
+                          View
+                        </span>
+                      )}
                       <PublishButton slug={entry.slug} published={entry.published} />
                       <DeleteButton slug={entry.slug} />
                     </div>
@@ -285,6 +298,7 @@ export default function AdminDashboard({
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
