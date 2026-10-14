@@ -49,6 +49,7 @@ export interface Dict {
     edited: string;
     year: string;
     words: string;
+    pdf: string;
   };
   view: {
     backTo: string;
@@ -56,6 +57,10 @@ export interface Dict {
     lastEdited: string;
     year: string;
     words: string;
+    pdf: string;
+    openPdf: string;
+    downloadPdf: string;
+    pdfMobileNotice: string;
     description: string;
     authorsNote: string;
     translationWarning: string;
@@ -179,6 +184,7 @@ export const DICTS: Record<Lang, Dict> = {
       edited: 'Edited',
       year: 'Year',
       words: 'words',
+      pdf: 'PDF',
     },
     view: {
       backTo: 'Back to',
@@ -186,6 +192,11 @@ export const DICTS: Record<Lang, Dict> = {
       lastEdited: 'Last edited',
       year: 'Year',
       words: 'words',
+      pdf: 'PDF',
+      openPdf: 'Open PDF',
+      downloadPdf: 'Download',
+      pdfMobileNotice:
+        'Inline PDF previews are not supported by this browser. Use the button to open the document.',
       description: 'Description',
       authorsNote: 'Author\u2019s note',
       translationWarning:
@@ -312,6 +323,7 @@ export const DICTS: Record<Lang, Dict> = {
       edited: 'Düzenlendi',
       year: 'Yıl',
       words: 'kelime',
+      pdf: 'PDF',
     },
     view: {
       backTo: 'Geri dön:',
@@ -319,6 +331,11 @@ export const DICTS: Record<Lang, Dict> = {
       lastEdited: 'Son düzenleme',
       year: 'Yıl',
       words: 'kelime',
+      pdf: 'PDF',
+      openPdf: 'PDF\u2019yi aç',
+      downloadPdf: 'İndir',
+      pdfMobileNotice:
+        'Bu tarayıcı PDF\u2019yi sayfa içinde gösteremiyor. Belgeyi açmak için düğmeyi kullanın.',
       description: 'Açıklama',
       authorsNote: 'Yazarın notu',
       translationWarning:

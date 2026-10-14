@@ -21,6 +21,7 @@ export default function EntryCard({
   const localizedTitle = lang === 'tr' && entry.titleTr ? entry.titleTr : entry.title;
   const localizedDescription =
     lang === 'tr' && entry.descriptionTr ? entry.descriptionTr : entry.description;
+  const hasPdf = !!(lang === 'tr' ? entry.pdfTr || entry.pdf : entry.pdf);
 
   return (
     <Link
@@ -42,7 +43,7 @@ export default function EntryCard({
           {localizedTitle}
         </h2>
         <span className="shrink-0 rounded-full border border-[#8a7f9e]/30 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#8a7f9e]">
-          {formatWordCount(entry.wordCount)} {dict.card.words}
+          {hasPdf ? dict.card.pdf : `${formatWordCount(entry.wordCount)} ${dict.card.words}`}
         </span>
       </div>
       {localizedDescription && (

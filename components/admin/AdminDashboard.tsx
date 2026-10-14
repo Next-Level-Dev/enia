@@ -27,9 +27,10 @@ const TR_FIELD_LABELS: Record<string, string> = {
 };
 
 function missingTrFields(entry: EntrySummary): string[] {
-  return Object.keys(TR_FIELD_LABELS).filter(
-    (field) => !entry[field as keyof EntrySummary]
-  );
+  return Object.keys(TR_FIELD_LABELS).filter((field) => {
+    if (field === 'contentTr' && (entry.contentTr || entry.pdfTr)) return false;
+    return !entry[field as keyof EntrySummary];
+  });
 }
 
 export interface AdminFilter {

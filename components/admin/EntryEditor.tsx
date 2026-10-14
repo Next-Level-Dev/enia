@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CATEGORIES,
@@ -13,10 +20,12 @@ import {
   type Category,
 } from '@/lib/categories';
 import { countWords } from '@/lib/wordcount';
+import { isMobileUserAgent } from '@/lib/device';
 import type { Lang } from '@/lib/i18n';
 import type { Entry } from '@/lib/types';
 import EntryView from '@/components/EntryView';
 import Tooltip from '@/components/Tooltip';
+import PdfViewer from '@/components/PdfViewer';
 import MarkdownGuide from './MarkdownGuide';
 import EditorLanguageToggle from './EditorLanguageToggle';
 import EditorBottomBar, { type EditorTab } from './EditorBottomBar';
@@ -27,11 +36,13 @@ export interface EntryEditorInitial {
   description: string;
   authorNote: string;
   content: string;
+  pdf: string;
   tr: {
     title: string;
     description: string;
     authorNote: string;
     content: string;
+    pdf: string;
   };
   lastEdited: string;
   lastTranslated: string;
@@ -56,6 +67,8 @@ const FIELD_LABELS: Record<string, string> = {
   descriptionTr: 'Description (TR)',
   authorNoteTr: 'Author note (TR)',
   contentTr: 'Content (TR)',
+  pdf: 'PDF',
+  pdfTr: 'PDF (TR)',
   releaseDate: 'Release date',
   lastEdited: 'Last edited',
   lastTranslated: 'Last translated',
@@ -77,6 +90,10 @@ const labelClass = 'text-sm font-medium text-gray-200';
 const currentInputClass =
   'w-full cursor-not-allowed rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-[#8a7f9e] opacity-60 outline-none';
 const dateHintClass = 'text-xs font-medium uppercase tracking-wide text-[#8a7f9e]';
+
+const subscribeNoop = () => () => {};
+const getIsMobile = () => isMobileUserAgent(navigator.userAgent);
+const getIsMobileServer = () => false;
 
 function FieldHint({ children, fallback }: { children?: string; fallback: string }) {
   if (children) return <p className="text-xs text-[#8a7f9e]">{children}</p>;
@@ -103,10 +120,12 @@ export default function EntryEditor({
     description: initial?.description ?? '',
     authorNote: initial?.authorNote ?? '',
     content: initial?.content ?? '',
+    pdf: initial?.pdf ?? '',
     titleTr: initial?.tr.title ?? '',
     descriptionTr: initial?.tr.description ?? '',
     authorNoteTr: initial?.tr.authorNote ?? '',
     contentTr: initial?.tr.content ?? '',
+    pdfTr: initial?.tr.pdf ?? '',
     releaseDate: initial?.releaseDate ?? today,
     lastEdited: today,
     lastTranslated: initial?.lastTranslated ?? today,
@@ -123,10 +142,12 @@ export default function EntryEditor({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [authorNote, setAuthorNote] = useState(initial?.authorNote ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
+  const [pdf, setPdf] = useState(initial?.pdf ?? '');
   const [titleTr, setTitleTr] = useState(initial?.tr.title ?? '');
   const [descriptionTr, setDescriptionTr] = useState(initial?.tr.description ?? '');
   const [authorNoteTr, setAuthorNoteTr] = useState(initial?.tr.authorNote ?? '');
   const [contentTr, setContentTr] = useState(initial?.tr.content ?? '');
+  const [pdfTr, setPdfTr] = useState(initial?.tr.pdf ?? '');
   const [category, setCategory] = useState<Category>(initial?.category ?? 'worldbuilding');
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? today);
@@ -136,6 +157,9 @@ export default function EntryEditor({
   const [published, setPublished] = useState(initial?.published ?? false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const isMobile = useSyncExternalStore(subscribeNoop, getIsMobile, getIsMobileServer);
 
   const [draft, setDraft] = useState<DraftSnapshot | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -172,10 +196,12 @@ export default function EntryEditor({
               description,
               authorNote,
               content,
+              pdf,
               titleTr,
               descriptionTr,
               authorNoteTr,
               contentTr,
+              pdfTr,
               releaseDate,
               lastEdited,
               lastTranslated,
@@ -195,10 +221,12 @@ export default function EntryEditor({
     description,
     authorNote,
     content,
+    pdf,
     titleTr,
     descriptionTr,
     authorNoteTr,
     contentTr,
+    pdfTr,
     releaseDate,
     lastEdited,
     lastTranslated,
@@ -215,10 +243,12 @@ export default function EntryEditor({
     setDescription(String(v.description ?? ''));
     setAuthorNote(String(v.authorNote ?? ''));
     setContent(String(v.content ?? ''));
+    setPdf(String(v.pdf ?? ''));
     setTitleTr(String(v.titleTr ?? ''));
     setDescriptionTr(String(v.descriptionTr ?? ''));
     setAuthorNoteTr(String(v.authorNoteTr ?? ''));
     setContentTr(String(v.contentTr ?? ''));
+    setPdfTr(String(v.pdfTr ?? ''));
     setReleaseDate(String(v.releaseDate ?? today));
     setLastEdited(String(v.lastEdited ?? today));
     setLastTranslated(String(v.lastTranslated ?? initial?.lastTranslated ?? today));
@@ -257,6 +287,38 @@ export default function EntryEditor({
     if (next !== 'story') setYear('');
   }
 
+  const currentPdf = lang === 'tr' ? pdfTr : pdf;
+  const setCurrentPdf = lang === 'tr' ? setPdfTr : setPdf;
+
+  async function handlePdfUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploadError('');
+    if (file.type && file.type !== 'application/pdf') {
+      setUploadError('Only PDF files are allowed.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const response = await fetch('/api/uploads', { method: 'POST', body: form });
+      const data = await response.json();
+      if (!response.ok) {
+        setUploadError(data.error ?? 'Upload failed.');
+        return;
+      }
+      setCurrentPdf(data.name);
+    } catch {
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSave() {
     setLoading(true);
     setError('');
@@ -266,7 +328,14 @@ export default function EntryEditor({
       description,
       authorNote,
       content,
-      tr: { title: titleTr, description: descriptionTr, authorNote: authorNoteTr, content: contentTr },
+      pdf,
+      tr: {
+        title: titleTr,
+        description: descriptionTr,
+        authorNote: authorNoteTr,
+        content: contentTr,
+        pdf: pdfTr,
+      },
       lastEdited,
       lastTranslated,
       releaseDate,
@@ -324,9 +393,16 @@ export default function EntryEditor({
     description: values.description,
     authorNote: values.authorNote,
     content: values.content,
+    pdf: isTr ? pdfTr || pdf : pdf,
     tr:
-      titleTr || descriptionTr || authorNoteTr || contentTr
-        ? { title: titleTr, description: descriptionTr, authorNote: authorNoteTr, content: contentTr }
+      titleTr || descriptionTr || authorNoteTr || contentTr || pdfTr
+        ? {
+            title: titleTr,
+            description: descriptionTr,
+            authorNote: authorNoteTr,
+            content: contentTr,
+            pdf: pdfTr,
+          }
         : null,
     lastEdited,
     lastTranslated,
@@ -594,22 +670,79 @@ export default function EntryEditor({
   );
 
   const draftPane = (
-    <div className="flex flex-1 flex-col gap-2">
-      <label htmlFor="content" className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className={labelClass}>Content (Markdown)</span>
-        <span className="text-xs text-[#8a7f9e]">
-          {isTr ? 'Türkçe' : 'English'} · {countWords(values.content)} words
-        </span>
-      </label>
-      <textarea
-        id="content"
-        aria-label={`Content (Markdown) — ${isTr ? 'Türkçe' : 'English'}`}
-        placeholder={isTr ? 'Türkçe içeriği buraya yazın…' : 'Write the markdown content here…'}
-        spellCheck={false}
-        className={`${inputClass} prose-input min-h-[45vh] w-full flex-1 resize-none text-base leading-relaxed`}
-        value={values.content}
-        onChange={(e) => (isTr ? setContentTr(e.target.value) : setContent(e.target.value))}
-      />
+    <div className="flex flex-1 flex-col gap-4">
+      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={labelClass}>PDF attachment</span>
+          <span className="text-xs text-[#8a7f9e]">{isTr ? 'Türkçe' : 'English'}</span>
+        </div>
+        <p className="mt-1 text-xs text-[#8a7f9e]">
+          Upload a PDF to show it instead of the markdown content below. Leave empty to use markdown.
+        </p>
+
+        {currentPdf ? (
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="truncate text-sm text-gray-200">{currentPdf}</span>
+              <button
+                type="button"
+                onClick={() => setCurrentPdf('')}
+                className="shrink-0 rounded-lg border border-red-400/40 bg-red-400/10 px-3 py-1.5 text-sm font-medium text-red-300 transition hover:bg-red-400/20"
+              >
+                Remove PDF
+              </button>
+            </div>
+            <PdfViewer
+              lang={lang}
+              src={`/api/pdf/${currentPdf}`}
+              title={values.title || 'PDF'}
+              isMobile={isMobile}
+            />
+          </div>
+        ) : (
+          <label
+            className={`mt-3 inline-flex cursor-pointer items-center rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-[#B3B3B3] transition hover:border-white/30 hover:text-white ${
+              uploading ? 'pointer-events-none opacity-60' : ''
+            }`}
+          >
+            {uploading ? 'Uploading…' : 'Upload PDF'}
+            <input
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              disabled={uploading}
+              onChange={handlePdfUpload}
+            />
+          </label>
+        )}
+
+        {uploadError && <p className="mt-2 text-sm text-red-300">{uploadError}</p>}
+      </div>
+
+      {currentPdf ? (
+        <p className="rounded-lg border border-[#FFE47A]/40 bg-[#FFE47A]/10 px-4 py-3 text-sm text-[#FFE47A]">
+          A PDF is attached, so it is shown instead of the markdown content. Remove it to edit the
+          markdown again.
+        </p>
+      ) : (
+        <div className="flex flex-1 flex-col gap-2">
+          <label htmlFor="content" className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className={labelClass}>Content (Markdown)</span>
+            <span className="text-xs text-[#8a7f9e]">
+              {isTr ? 'Türkçe' : 'English'} · {countWords(values.content)} words
+            </span>
+          </label>
+          <textarea
+            id="content"
+            aria-label={`Content (Markdown) — ${isTr ? 'Türkçe' : 'English'}`}
+            placeholder={isTr ? 'Türkçe içeriği buraya yazın…' : 'Write the markdown content here…'}
+            spellCheck={false}
+            className={`${inputClass} prose-input min-h-[45vh] w-full flex-1 resize-none text-base leading-relaxed`}
+            value={values.content}
+            onChange={(e) => (isTr ? setContentTr(e.target.value) : setContent(e.target.value))}
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -622,6 +755,7 @@ export default function EntryEditor({
       hasTranslation={previewEntry.tr !== null}
       showBackLink={false}
       showLangSwitch={false}
+      isMobile={isMobile}
     >
       <aside className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
         <span className="text-xs font-semibold uppercase tracking-widest text-[#8a7f9e]">

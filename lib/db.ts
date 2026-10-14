@@ -5,6 +5,7 @@ import type { Entry, EntryTranslation } from './types';
 import { isCategory, isTagForCategory, groupTags, TAG_GROUP_LABELS, TAG_GROUPS, type Category } from './categories';
 import { countWords } from './wordcount';
 import { hashPassword } from './password';
+import { isValidPdfName } from './uploads';
 import { migrateData, migrateSchema } from './schema';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -71,10 +72,12 @@ interface EntryRow {
   description: string;
   author_note: string;
   content: string;
+  pdf: string;
   title_tr: string;
   description_tr: string;
   author_note_tr: string;
   content_tr: string;
+  pdf_tr: string;
   last_edited: string;
   last_translated: string;
   release_date: string;
@@ -100,8 +103,9 @@ function translationFromRow(row: EntryRow): EntryTranslation | null {
     description: row.description_tr,
     authorNote: row.author_note_tr,
     content: row.content_tr,
+    pdf: row.pdf_tr,
   };
-  if (!tr.title && !tr.description && !tr.authorNote && !tr.content) return null;
+  if (!tr.title && !tr.description && !tr.authorNote && !tr.content && !tr.pdf) return null;
   return tr;
 }
 
@@ -112,6 +116,7 @@ function rowToEntry(row: EntryRow): Entry {
     description: row.description,
     authorNote: row.author_note,
     content: row.content,
+    pdf: row.pdf,
     tr: translationFromRow(row),
     lastEdited: row.last_edited,
     lastTranslated: row.last_translated || row.last_edited,
@@ -132,6 +137,8 @@ export interface EntrySummary {
   descriptionTr: string;
   authorNoteTr: string;
   contentTr: string;
+  pdf: string;
+  pdfTr: string;
   lastEdited: string;
   lastTranslated: string;
   releaseDate: string;
@@ -189,7 +196,7 @@ function selectEntries(options: ListOptions, onlyPublished: boolean): EntryRow[]
 
   return getDB()
     .prepare(
-      `SELECT slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, last_translated, release_date, year, category, tags, published FROM entries ${where} ${orderBy}`
+      `SELECT slug, title, description, author_note, content, pdf, title_tr, description_tr, author_note_tr, content_tr, pdf_tr, last_edited, last_translated, release_date, year, category, tags, published FROM entries ${where} ${orderBy}`
     )
     .all(params) as unknown as EntryRow[];
 }
@@ -203,6 +210,8 @@ function toSummary(row: EntryRow): EntrySummary {
     descriptionTr: row.description_tr,
     authorNoteTr: row.author_note_tr,
     contentTr: row.content_tr,
+    pdf: row.pdf,
+    pdfTr: row.pdf_tr,
     lastEdited: row.last_edited,
     lastTranslated: row.last_translated || row.last_edited,
     releaseDate: row.release_date,
@@ -223,6 +232,14 @@ export function getEntryBySlug(slug: string): Entry | undefined {
   return row ? rowToEntry(row) : undefined;
 }
 
+/** Whether a stored PDF may be served to anonymous visitors (referenced by a published entry). */
+export function isPdfReferencedByPublishedEntry(name: string): boolean {
+  const row = getDB()
+    .prepare('SELECT 1 FROM entries WHERE published = 1 AND (pdf = ? OR pdf_tr = ?) LIMIT 1')
+    .get(name, name);
+  return !!row;
+}
+
 export function getAllEntries(options: ListOptions = {}): EntrySummary[] {
   return selectEntries(options, false).map(toSummary);
 }
@@ -232,6 +249,7 @@ export interface EntryInput {
   description: string;
   authorNote: string;
   content: string;
+  pdf: string;
   tr: EntryTranslation;
   lastEdited: string;
   lastTranslated: string;
@@ -270,6 +288,13 @@ export function validateEntryInput(input: unknown): EntryInput {
   const authorNote = typeof raw.authorNote === 'string' ? raw.authorNote : '';
   const content = typeof raw.content === 'string' ? raw.content : '';
 
+  const pdfOr = (value: unknown): string => {
+    if (value === undefined || value === null || value === '') return '';
+    if (!isValidPdfName(value)) throw new Error('Invalid PDF reference');
+    return value;
+  };
+  const pdf = pdfOr(raw.pdf);
+
   const trRaw = typeof raw.tr === 'object' && raw.tr !== null ? (raw.tr as Record<string, unknown>) : {};
   const str = (v: unknown) => (typeof v === 'string' ? v : '');
   const tr: EntryTranslation = {
@@ -277,6 +302,7 @@ export function validateEntryInput(input: unknown): EntryInput {
     description: str(trRaw.description),
     authorNote: str(trRaw.authorNote),
     content: str(trRaw.content),
+    pdf: pdfOr(trRaw.pdf),
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -312,6 +338,7 @@ export function validateEntryInput(input: unknown): EntryInput {
     description,
     authorNote,
     content,
+    pdf,
     tr,
     lastEdited,
     lastTranslated,
@@ -335,18 +362,20 @@ export function createEntry(input: EntryInput): Entry {
   const slug = uniqueSlug(slugify(input.title));
   const tagsJson = JSON.stringify(input.tags);
   getDB().prepare(
-    `INSERT INTO entries (slug, title, description, author_note, content, title_tr, description_tr, author_note_tr, content_tr, last_edited, last_translated, release_date, year, category, tags, published)
-     VALUES (:slug, :title, :description, :author_note, :content, :title_tr, :description_tr, :author_note_tr, :content_tr, :last_edited, :last_translated, :release_date, :year, :category, :tags, :published)`
+    `INSERT INTO entries (slug, title, description, author_note, content, pdf, title_tr, description_tr, author_note_tr, content_tr, pdf_tr, last_edited, last_translated, release_date, year, category, tags, published)
+     VALUES (:slug, :title, :description, :author_note, :content, :pdf, :title_tr, :description_tr, :author_note_tr, :content_tr, :pdf_tr, :last_edited, :last_translated, :release_date, :year, :category, :tags, :published)`
   ).run({
     slug,
     title: input.title,
     description: input.description,
     author_note: input.authorNote,
     content: input.content,
+    pdf: input.pdf,
     title_tr: input.tr.title,
     description_tr: input.tr.description,
     author_note_tr: input.tr.authorNote,
     content_tr: input.tr.content,
+    pdf_tr: input.tr.pdf,
     last_edited: input.lastEdited,
     last_translated: input.lastTranslated,
     release_date: input.releaseDate,
@@ -367,8 +396,8 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
   const finalSlug = slugExists ? uniqueSlug(newSlug) : newSlug;
 
   getDB().prepare(
-    `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content,
-     title_tr = :title_tr, description_tr = :description_tr, author_note_tr = :author_note_tr, content_tr = :content_tr,
+    `UPDATE entries SET slug = :slug, title = :title, description = :description, author_note = :author_note, content = :content, pdf = :pdf,
+     title_tr = :title_tr, description_tr = :description_tr, author_note_tr = :author_note_tr, content_tr = :content_tr, pdf_tr = :pdf_tr,
      last_edited = :last_edited, last_translated = :last_translated, release_date = :release_date, year = :year, category = :category, tags = :tags,
      published = :published
      WHERE id = :id`
@@ -378,10 +407,12 @@ export function updateEntry(slug: string, input: EntryInput): Entry | undefined 
     description: input.description,
     author_note: input.authorNote,
     content: input.content,
+    pdf: input.pdf,
     title_tr: input.tr.title,
     description_tr: input.tr.description,
     author_note_tr: input.tr.authorNote,
     content_tr: input.tr.content,
+    pdf_tr: input.tr.pdf,
     last_edited: input.lastEdited,
     last_translated: input.lastTranslated,
     release_date: input.releaseDate,

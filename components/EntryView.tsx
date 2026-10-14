@@ -7,6 +7,7 @@ import { tagGroupMeanings } from '@/lib/categories';
 import { formatDateDMY, isBefore } from '@/lib/dates';
 import { formatWordCount } from '@/lib/wordcount';
 import Tooltip from './Tooltip';
+import PdfViewer from './PdfViewer';
 
 function formatDate(date: string): string {
   const [year, month, day] = date.split('-');
@@ -21,6 +22,7 @@ export default function EntryView({
   hasTranslation = false,
   showBackLink = true,
   showLangSwitch = true,
+  isMobile = false,
   children,
 }: {
   lang: Lang;
@@ -31,11 +33,14 @@ export default function EntryView({
   /** The admin preview reuses this component, where there is no "back to section" link. */
   showBackLink?: boolean;
   showLangSwitch?: boolean;
+  /** Android/mobile browsers cannot render a PDF inline; show an open link instead. */
+  isMobile?: boolean;
   /** Extra context rendered above the article — used by the admin preview. */
   children?: ReactNode;
 }) {
   const dict = getDict(lang);
   const sectionTitle = dict.sectionTitles[section] ?? section;
+  const pdfSrc = entry.pdf ? `/api/pdf/${entry.pdf}` : null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12">
@@ -71,7 +76,7 @@ export default function EntryView({
           <h1 className="mt-4 font-serif text-4xl font-extrabold text-gray-100">{entry.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8a7f9e]">
             <span>
-              {dict.view.words} {formatWordCount(entry.wordCount)}
+              {pdfSrc ? dict.view.pdf : `${dict.view.words} ${formatWordCount(entry.wordCount)}`}
             </span>
             {entry.category === 'story' && (
               <span>
@@ -142,7 +147,11 @@ export default function EntryView({
         )}
 
         <div className="mt-8">
-          <Markdown source={entry.content} />
+          {pdfSrc ? (
+            <PdfViewer lang={lang} src={pdfSrc} title={entry.title} isMobile={isMobile} />
+          ) : (
+            <Markdown source={entry.content} />
+          )}
         </div>
       </article>
     </div>

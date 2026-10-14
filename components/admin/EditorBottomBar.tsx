@@ -4,7 +4,7 @@ export type EditorTab = 'overview' | 'draft' | 'preview';
 
 const TABS: { id: EditorTab; label: string; hint: string }[] = [
   { id: 'overview', label: 'Overview', hint: 'Title, dates, tags and other metadata' },
-  { id: 'draft', label: 'Draft', hint: 'Write the markdown content' },
+  { id: 'draft', label: 'Draft', hint: 'Write the markdown content or attach a PDF' },
   { id: 'preview', label: 'Preview', hint: 'The page exactly as visitors see it' },
 ];
 

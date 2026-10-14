@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { SECTION_TO_CATEGORY } from '@/lib/categories';
 import { getEntryBySlug } from '@/lib/db';
 import { getLang } from '@/lib/i18n-server';
+import { isMobileUserAgent } from '@/lib/device';
 import type { Lang } from '@/lib/i18n';
 import EntryView from '@/components/EntryView';
 
@@ -15,6 +17,7 @@ export default async function EntryPage(props: PageProps<'/[section]/[slug]'>) {
 
   const siteLang = await getLang();
   const hasTranslation = entry.tr !== null;
+  const isMobile = isMobileUserAgent((await headers()).get('user-agent'));
 
   const param = await props.searchParams;
   const requested: Lang | undefined =
@@ -30,6 +33,7 @@ export default async function EntryPage(props: PageProps<'/[section]/[slug]'>) {
           description: entry.tr.description || entry.description,
           authorNote: entry.tr.authorNote || entry.authorNote,
           content: entry.tr.content || entry.content,
+          pdf: entry.tr.pdf || entry.pdf,
         }
       : entry;
 
@@ -40,6 +44,7 @@ export default async function EntryPage(props: PageProps<'/[section]/[slug]'>) {
       entry={localized}
       viewLang={viewLang}
       hasTranslation={hasTranslation}
+      isMobile={isMobile}
     />
   );
 }

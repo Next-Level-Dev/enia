@@ -5,6 +5,8 @@ export interface EntryTranslation {
   description: string;
   authorNote: string;
   content: string;
+  /** Stored PDF file name; when set it is shown instead of the markdown content. */
+  pdf: string;
 }
 
 export interface Entry {
@@ -13,6 +15,8 @@ export interface Entry {
   description: string;
   authorNote: string;
   content: string;
+  /** Stored PDF file name; when set it is shown instead of the markdown content. */
+  pdf: string;
   tr: EntryTranslation | null;
   lastEdited: string;
   lastTranslated: string;

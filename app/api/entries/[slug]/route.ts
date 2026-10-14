@@ -7,6 +7,7 @@ import {
   updateEntry,
   validateEntryInput,
 } from '@/lib/db';
+import { deletePdf } from '@/lib/uploads';
 
 export async function GET(_request: NextRequest, ctx: RouteContext<'/api/entries/[slug]'>) {
   const { slug } = await ctx.params;
@@ -41,10 +42,18 @@ export async function PUT(request: NextRequest, ctx: RouteContext<'/api/entries/
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  const previous = getEntryBySlug(slug);
+
   const entry = updateEntry(slug, input);
   if (!entry) {
     return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
   }
+
+  if (previous) {
+    if (previous.pdf && previous.pdf !== input.pdf) await deletePdf(previous.pdf);
+    if (previous.tr?.pdf && previous.tr.pdf !== input.tr.pdf) await deletePdf(previous.tr.pdf);
+  }
+
   return NextResponse.json({ entry });
 }
 
@@ -80,9 +89,16 @@ export async function DELETE(request: NextRequest, ctx: RouteContext<'/api/entri
   }
 
   const { slug } = await ctx.params;
+  const previous = getEntryBySlug(slug);
   const deleted = deleteEntry(slug);
   if (!deleted) {
     return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
   }
+
+  if (previous) {
+    await deletePdf(previous.pdf);
+    await deletePdf(previous.tr?.pdf);
+  }
+
   return new NextResponse(null, { status: 204 });
 }
